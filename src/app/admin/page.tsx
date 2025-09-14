@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic'
 
 // Dynamically import the client component to avoid SSR issues with drag-and-drop
 const AdminPanelClient = dynamic(() => import('./AdminPanelClient'), {
-  ssr: false,
   loading: () => (
     <div className="py-12 md:py-20 px-5 md:px-10" style={{backgroundColor: 'var(--bg-primary)'}}>
       <div className="max-w-6xl mx-auto text-center">

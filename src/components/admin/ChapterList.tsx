@@ -67,6 +67,9 @@ export default function ChapterList({
   // Filter and group chapters
   const filteredAndGroupedChapters = useMemo(() => {
     let filtered = chapters.filter(chapter => {
+      // Safety check: ensure chapter exists and has required properties
+      if (!chapter || !chapter.title || !chapter.preview) return false
+      
       const matchesSearch = chapter.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           chapter.preview.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesCategory = selectedCategory === '' || chapter.category_id === selectedCategory

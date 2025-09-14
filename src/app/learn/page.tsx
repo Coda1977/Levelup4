@@ -1,51 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-
-type Category = {
-  id: string
-  name: string
-  description: string
-  sort_order: number
-}
-
-type Chapter = {
-  id: string
-  category_id: string
-  title: string
-  content: string
-  preview: string
-  sort_order: number
-  chapter_number: number
-  content_type: string
-  categories?: Category
-}
+import { useEffect } from 'react'
+import { useData, type Chapter, type Category } from '@/contexts/DataContext'
 
 export default function LearnPage() {
-  const [chapters, setChapters] = useState<Chapter[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
+  const { 
+    chapters, 
+    categories, 
+    chaptersLoading, 
+    categoriesLoading,
+    fetchChaptersAndCategories
+  } = useData()
+  
+  const loading = chaptersLoading || categoriesLoading
 
   useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/admin/chapters')
-      const data = await response.json()
-      
-      if (response.ok) {
-        setCategories(data.categories || [])
-        setChapters(data.chapters || [])
-      }
-    } catch (error) {
-      console.error('Error loading data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+    fetchChaptersAndCategories()
+  }, [fetchChaptersAndCategories])
 
   const getPersonalizedGreeting = () => {
     const hour = new Date().getHours()

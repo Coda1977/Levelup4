@@ -56,16 +56,25 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { id, ...formData } = await request.json()
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
     
-    const { error } = await supabaseAdmin
+    if (!id) {
+      return NextResponse.json({ error: 'Chapter ID required' }, { status: 400 })
+    }
+    
+    const formData = await request.json()
+    
+    const { data, error } = await supabaseAdmin
       .from('chapters')
       .update(formData)
       .eq('id', id)
+      .select('*')
+      .single()
 
     if (error) throw error
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, chapter: data })
   } catch (error) {
     console.error('Error updating chapter:', error)
     return NextResponse.json({ error: 'Failed to update chapter' }, { status: 500 })

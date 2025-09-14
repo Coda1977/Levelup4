@@ -3,52 +3,39 @@
 import { useState, useEffect } from 'react'
 import ChapterForm from '@/components/admin/ChapterForm'
 import ChapterList from '@/components/admin/ChapterList'
-
-type Category = {
-  id: string
-  name: string
-  description: string
-  sort_order: number
-}
-
-type Chapter = {
-  id: string
-  category_id: string
-  title: string
-  content: string
-  preview: string
-  sort_order: number
-  content_type: string
-  chapter_number: number
-  reading_time: number | null
-  podcast_title: string | null
-  podcast_url: string | null
-  video_title: string | null
-  video_url: string | null
-  try_this_week: string | null
-  author: string | null
-  description: string | null
-  key_takeaways: string[] | null
-  podcast_header: string | null
-  video_header: string | null
-  audio_url?: string | null
-  audio_voice?: string | null
-  audio_generated_at?: string | null
-  categories?: Category
-}
+import { useData, type Chapter, type Category } from '@/contexts/DataContext'
 
 export default function AdminPanelClient() {
-  const [chapters, setChapters] = useState<Chapter[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
+  const { 
+    chapters, 
+    categories, 
+    chaptersLoading, 
+    categoriesLoading,
+    chaptersError,
+    categoriesError,
+    fetchChaptersAndCategories,
+    updateChapter,
+    deleteChapter,
+    addChapter
+  } = useData()
+  
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [editingChapter, setEditingChapter] = useState<Chapter | null>(null)
   const [showForm, setShowForm] = useState(false)
+  
+  const loading = chaptersLoading || categoriesLoading
 
   useEffect(() => {
-    loadData()
-  }, [])
+    fetchChaptersAndCategories()
+  }, [fetchChaptersAndCategories])
+
+  // Update local error state when context errors change
+  useEffect(() => {
+    if (chaptersError || categoriesError) {
+      setError(chaptersError || categoriesError)
+    }
+  }, [chaptersError, categoriesError])
 
   useEffect(() => {
     if (success) {
@@ -63,31 +50,6 @@ export default function AdminPanelClient() {
       return () => clearTimeout(timer)
     }
   }, [error])
-
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      const [chaptersRes, categoriesRes] = await Promise.all([
-        fetch('/api/admin/chapters'),
-        fetch('/api/admin/chapters?categories=true')
-      ])
-
-      if (!chaptersRes.ok || !categoriesRes.ok) {
-        throw new Error('Failed to load data')
-      }
-
-      const chaptersData = await chaptersRes.json()
-      const categoriesData = await categoriesRes.json()
-      
-      setChapters(chaptersData.chapters)
-      setCategories(categoriesData.categories)
-    } catch (error) {
-      console.error('Error loading data:', error)
-      setError('Failed to load data')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleFormSubmit = async (chapterData: any, isEditing: boolean) => {
     try {
@@ -110,10 +72,10 @@ export default function AdminPanelClient() {
       const result = await response.json()
       
       if (isEditing) {
-        setChapters(chapters.map(ch => ch.id === editingChapter?.id ? result.chapter : ch))
+        updateChapter(result.chapter)
         setSuccess('Chapter updated successfully')
       } else {
-        setChapters([...chapters, result.chapter])
+        addChapter(result.chapter)
         setSuccess('Chapter created successfully')
       }
 
@@ -147,7 +109,7 @@ export default function AdminPanelClient() {
         throw new Error(errorData.error || 'Failed to delete chapter')
       }
 
-      setChapters(chapters.filter(ch => ch.id !== id))
+      deleteChapter(id)
       setSuccess('Chapter deleted successfully')
     } catch (error) {
       console.error('Error deleting chapter:', error)
@@ -169,13 +131,14 @@ export default function AdminPanelClient() {
         throw new Error('Failed to reorder chapters')
       }
 
-      setChapters(reorderedChapters)
+      // Update each chapter in the context
+      reorderedChapters.forEach(chapter => updateChapter(chapter))
       setSuccess('Chapter order updated')
     } catch (error) {
       console.error('Error reordering chapters:', error)
       setError('Failed to reorder chapters')
       // Reload to restore original order
-      loadData()
+      fetchChaptersAndCategories()
     }
   }
 
