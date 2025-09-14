@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-function useScrollFadeIn(): [React.RefObject<HTMLDivElement>, boolean] {
+function useScrollFadeIn(): [React.RefObject<HTMLDivElement | null>, boolean] {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   useEffect(() => {

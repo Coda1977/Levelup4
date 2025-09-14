@@ -5,9 +5,7 @@ import { marked } from 'marked'
 // Configure marked for clean HTML output
 marked.setOptions({
   breaks: true,
-  gfm: true,
-  headerIds: false,
-  mangle: false
+  gfm: true
 })
 
 export async function POST() {
@@ -49,7 +47,7 @@ export async function POST() {
         console.log(`Converting chapter: ${chapter.title}`)
 
         // Convert markdown to HTML
-        const htmlContent = marked(chapter.content)
+        const htmlContent = await marked(chapter.content)
         
         // Clean up the HTML (remove empty paragraphs, etc.)
         const cleanedHtml = htmlContent

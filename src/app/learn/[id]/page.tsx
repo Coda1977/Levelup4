@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import ChapterAudioPlayer from '@/components/ChapterAudioPlayer'
+import { sanitizeHtml } from '@/lib/sanitize'
 
 type Category = {
   id: string
@@ -202,7 +203,7 @@ export default function ChapterPage() {
       return (
         <div 
           className="chapter-html-content"
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
         />
       )
     }

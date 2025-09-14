@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { sanitizeHtml } from '@/lib/sanitize'
 
 interface MarkdownEditorProps {
   value: string
@@ -25,7 +26,7 @@ export function MarkdownEditor({ value, onChange, placeholder, className, style 
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       // Lists
       .replace(/^\* (.+)/gim, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+      .replace(/(<li>[\s\S]*<\/li>)/g, '<ul>$1</ul>')
       // Line breaks
       .replace(/\n\n/g, '</p><p>')
       // Blockquotes
@@ -147,7 +148,7 @@ export function MarkdownEditor({ value, onChange, placeholder, className, style 
           <div 
             className="w-full p-3 border-2 rounded-b-lg min-h-[200px] bg-white prose prose-sm max-w-none"
             style={{borderColor: '#E5E5E5'}}
-            dangerouslySetInnerHTML={{ __html: previewContent }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewContent) }}
           />
         ) : (
           <textarea

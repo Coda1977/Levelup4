@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useEffect, useState } from 'react'
+import { sanitizeHtml } from '@/lib/sanitize'
 
 interface TipTapEditorProps {
   value: string
@@ -293,7 +294,7 @@ export function TipTapEditor({ value, onChange, placeholder = 'Start writing...'
               <div 
                 className="chapter-content"
                 dangerouslySetInnerHTML={{ 
-                  __html: formatContentForPreview(editor?.getHTML() || '') 
+                  __html: sanitizeHtml(formatContentForPreview(editor?.getHTML() || '')) 
                 }}
               />
             </div>
