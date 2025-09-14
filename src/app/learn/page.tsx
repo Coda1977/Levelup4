@@ -165,10 +165,7 @@ export default function LearnPage() {
                   style={{backgroundColor: 'var(--white)'}}
                   onClick={() => window.location.href = `/learn/${chapter.id}`}
                 >
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 border-4 rounded-2xl flex items-center justify-center flex-shrink-0" style={{backgroundColor: 'var(--white)', borderColor: 'var(--text-primary)'}}>
-                      <div className="w-6 h-6 rounded-full" style={{backgroundColor: 'var(--text-primary)'}}></div>
-                    </div>
+                  <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h3 className="text-xl font-bold mb-2">{chapter.title}</h3>
                       <p className="text-sm mb-3" style={{color: 'var(--text-secondary)'}}>
@@ -178,7 +175,7 @@ export default function LearnPage() {
                         Pick up where you left off in this management essential
                       </p>
                     </div>
-                    <div className="px-4 py-2 rounded-full text-sm font-semibold" style={{backgroundColor: 'var(--accent-yellow)'}}>
+                    <div className="px-4 py-2 rounded-full text-sm font-semibold ml-4" style={{backgroundColor: 'var(--accent-yellow)'}}>
                       Continue
                     </div>
                   </div>
@@ -266,13 +263,12 @@ export default function LearnPage() {
 
                 <div className="space-y-2">
                   {category.lessons.slice(0, 3).map((lesson, index) => (
-                    <div key={lesson.id} className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full" style={{backgroundColor: 'var(--accent-yellow)'}}></div>
+                    <div key={lesson.id}>
                       <span className="text-sm" style={{color: 'var(--text-secondary)'}}>{lesson.title}</span>
                     </div>
                   ))}
                   {category.lessons.length > 3 && (
-                    <div className="text-xs font-medium" style={{color: 'var(--accent-blue)'}}>
+                    <div className="text-xs font-medium mt-2" style={{color: 'var(--accent-blue)'}}>
                       +{category.lessons.length - 3} more chapters
                     </div>
                   )}

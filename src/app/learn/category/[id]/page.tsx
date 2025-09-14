@@ -200,10 +200,6 @@ export default function CategoryPage() {
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0px)'}
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">📝</span>
-                          <div className="w-3 h-3 rounded-full" style={{backgroundColor: 'var(--accent-blue)'}}></div>
-                        </div>
                         <span className="text-sm px-2 py-1 rounded-full" style={{backgroundColor: 'var(--accent-yellow)', color: 'var(--text-primary)'}}>
                           {chapter.reading_time || Math.ceil(chapter.content.length / 1000)} min read
                         </span>
@@ -242,10 +238,6 @@ export default function CategoryPage() {
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0px)'}
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">📖</span>
-                          <div className="w-3 h-3 rounded-full" style={{backgroundColor: 'var(--accent-yellow)'}}></div>
-                        </div>
                         <span className="text-sm px-2 py-1 rounded-full" style={{backgroundColor: 'var(--accent-blue)', color: 'var(--white)'}}>
                           {book.reading_time || Math.ceil(book.content.length / 1000)} min read
                         </span>
