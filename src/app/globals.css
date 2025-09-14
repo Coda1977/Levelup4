@@ -1,0 +1,388 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #F5F0E8;
+  --text-primary: #1A1A1A;
+  --accent-yellow: #FFD60A;
+  --accent-blue: #003566;
+  --text-secondary: #4A4A4A;
+  --white: #FFFFFF;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Typography Classes */
+.hero-headline {
+  font-size: clamp(48px, 8vw, 80px);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1.1;
+}
+
+.section-header {
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.2;
+}
+
+.body-text {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+/* Animation Classes */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.7s ease-out forwards;
+}
+
+/* Reading Experience Typography */
+.chapter-content {
+  font-size: 19px;
+  line-height: 1.8;
+  color: var(--text-primary);
+}
+
+.chapter-content h2 {
+  font-size: clamp(28px, 4vw, 36px);
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 3rem 0 1.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.chapter-content h3 {
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 2.5rem 0 1.25rem 0;
+  letter-spacing: -0.25px;
+}
+
+.chapter-content p {
+  margin-bottom: 1.75rem;
+  max-width: 65ch;
+}
+
+.chapter-content blockquote {
+  border-left: 4px solid var(--accent-yellow);
+  padding: 1.5rem 2rem;
+  margin: 2rem 0;
+  background: linear-gradient(135deg, rgba(255, 214, 10, 0.08) 0%, rgba(255, 214, 10, 0.04) 100%);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  font-size: 20px;
+  position: relative;
+}
+
+.chapter-content blockquote::before {
+  content: '"';
+  font-size: 4rem;
+  color: var(--accent-yellow);
+  position: absolute;
+  top: -0.5rem;
+  left: 1rem;
+  font-family: Georgia, serif;
+}
+
+.chapter-content ul {
+  margin: 1.5rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.chapter-content ul li {
+  position: relative;
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+.chapter-content ul li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--accent-blue);
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.chapter-content ol {
+  margin: 1.5rem 0;
+  padding-left: 2rem;
+  counter-reset: custom-counter;
+}
+
+.chapter-content ol li {
+  counter-increment: custom-counter;
+  position: relative;
+  margin-bottom: 1rem;
+  padding-left: 1rem;
+  list-style: none;
+}
+
+.chapter-content ol li::before {
+  content: counter(custom-counter);
+  position: absolute;
+  left: -2rem;
+  background: var(--accent-blue);
+  color: var(--white);
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.section-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent-yellow) 50%, transparent 100%);
+  margin: 3rem 0;
+  position: relative;
+}
+
+.section-divider::after {
+  content: '✦';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--white);
+  color: var(--accent-blue);
+  padding: 0 1rem;
+  font-size: 14px;
+}
+
+/* Utility Classes */
+.hover-lift {
+  transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Navigation Styles */
+.nav-link {
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+}
+
+.nav-ai-coach {
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 25px;
+  background-color: var(--accent-yellow);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.nav-ai-coach:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.nav-admin {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+  text-decoration: none;
+}
+
+.nav-admin:hover {
+  color: var(--text-primary);
+}
+
+/* Mobile CTA */
+.mobile-cta {
+  background-color: var(--accent-blue);
+  color: var(--white);
+}
+
+.mobile-cta:hover {
+  background-color: var(--accent-yellow);
+  color: var(--text-primary);
+}
+
+/* HTML Content Styling for Chapters */
+.chapter-html-content {
+  font-size: 19px;
+  line-height: 1.8;
+  color: var(--text-primary);
+}
+
+.chapter-html-content h1 {
+  font-size: clamp(32px, 5vw, 42px);
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 3rem 0 1.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.chapter-html-content h2 {
+  font-size: clamp(28px, 4vw, 36px);
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 3rem 0 1.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.chapter-html-content h3 {
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 2.5rem 0 1.25rem 0;
+  letter-spacing: -0.25px;
+}
+
+.chapter-html-content p {
+  margin-bottom: 1.75rem;
+  max-width: 65ch;
+}
+
+.chapter-html-content blockquote {
+  border-left: 4px solid var(--accent-yellow);
+  padding: 1.5rem 2rem;
+  margin: 2rem 0;
+  background: linear-gradient(135deg, rgba(255, 214, 10, 0.08) 0%, rgba(255, 214, 10, 0.04) 100%);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  font-size: 20px;
+  position: relative;
+}
+
+.chapter-html-content ul {
+  margin: 1.5rem 0;
+  padding-left: 2rem;
+}
+
+.chapter-html-content ul li {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.chapter-html-content ol {
+  margin: 1.5rem 0;
+  padding-left: 2rem;
+}
+
+.chapter-html-content ol li {
+  margin-bottom: 1rem;
+}
+
+.chapter-html-content strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chapter-html-content em {
+  font-style: italic;
+}
+
+.chapter-html-content hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent-yellow) 50%, transparent 100%);
+  margin: 3rem 0;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .chapter-content {
+    font-size: 18px;
+    line-height: 1.7;
+  }
+  
+  .chapter-content h2 {
+    font-size: 24px;
+    margin: 2rem 0 1rem 0;
+  }
+  
+  .chapter-content h3 {
+    font-size: 20px;
+    margin: 1.5rem 0 0.75rem 0;
+  }
+  
+  .chapter-content p {
+    margin-bottom: 1.5rem;
+  }
+  
+  .chapter-content blockquote {
+    padding: 1rem 1.5rem;
+    font-size: 18px;
+    margin: 1.5rem 0;
+  }
+  
+  .chapter-content blockquote::before {
+    font-size: 3rem;
+    top: -0.25rem;
+  }
+  
+  .chapter-content ul li,
+  .chapter-content ol li {
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Larger touch targets */
+  .mobile-touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  
+  /* Mobile button improvements */
+  .mobile-button {
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+}
+
+/* Learn Page Buttons */
+.ai-coach-button {
+  border: 2px solid var(--accent-blue);
+  color: var(--accent-blue);
+  background-color: transparent;
+  transition: all 0.3s ease;
+}
+
+.ai-coach-button:hover {
+  background-color: var(--accent-blue);
+  color: var(--white);
+}
