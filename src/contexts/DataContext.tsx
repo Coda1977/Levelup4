@@ -291,7 +291,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_ERROR', payload: { key: 'chapters', error: errorMessage } })
       dispatch({ type: 'SET_ERROR', payload: { key: 'categories', error: errorMessage } })
     }
-  }, [state.chapters, state.categories])
+  }, [])
 
   const fetchChapter = useCallback(async (id: string): Promise<Chapter | null> => {
     // Check individual chapter cache first
@@ -327,7 +327,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_ERROR', payload: { key: id, error: errorMessage } })
       return null
     }
-  }, [state.chapters, state.individualChapters])
+  }, [])
 
   const updateChapter = useCallback((chapter: Chapter) => {
     dispatch({ type: 'UPDATE_CHAPTER', payload: chapter })
