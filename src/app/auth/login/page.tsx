@@ -19,22 +19,29 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const { error } = isSignUp
-      ? await signUp(email, password)
-      : await signIn(email, password)
+    try {
+      const { error } = isSignUp
+        ? await signUp(email, password)
+        : await signIn(email, password)
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      // For sign up, show a success message about email verification
-      if (isSignUp) {
-        setError('Please check your email to verify your account before logging in.')
+      if (error) {
+        // Handle specific error messages
+        if (error.message.includes('Email not confirmed')) {
+          setError('Please check your email to verify your account.')
+        } else if (error.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please try again.')
+        } else {
+          setError(error.message)
+        }
         setLoading(false)
-        setIsSignUp(false) // Switch back to login mode
       } else {
+        // Success - redirect to learn page for both signup and signin
+        setLoading(false)
         router.push('/learn')
       }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.')
+      setLoading(false)
     }
   }
 
