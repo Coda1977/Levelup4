@@ -3,15 +3,17 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Navigation() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { user, signOut, isAdmin, isLoading } = useAuth()
 
   // Determine which section we're in
   const isLearn = pathname.startsWith('/learn')
   const isAICoach = pathname.startsWith('/ai-coach') || pathname.startsWith('/chat')
-  const isAdmin = pathname.startsWith('/admin')
+  const isAdminPage = pathname.startsWith('/admin')
   
   return (
     <nav style={{backgroundColor: 'var(--white)'}} className="shadow-sm border-b border-gray-200">
@@ -23,27 +25,67 @@ export default function Navigation() {
         
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">
-          <Link
-            href="/learn"
-            className={isLearn ? "nav-ai-coach" : "nav-link"}
-            style={isLearn ? {} : {fontWeight: 500, color: 'var(--text-secondary)'}}
-          >
-            Learn
-          </Link>
-          <Link
-            href="/chat"
-            className={isAICoach ? "nav-ai-coach" : "nav-link"}
-            style={isAICoach ? {} : {fontWeight: 500, color: 'var(--text-secondary)'}}
-          >
-            AI Coach
-          </Link>
-          <Link
-            href="/admin"
-            className={isAdmin ? "nav-ai-coach" : "nav-admin"}
-            style={isAdmin ? {} : undefined}
-          >
-            Admin
-          </Link>
+          {user && (
+            <>
+              <Link
+                href="/learn"
+                className={isLearn ? "nav-ai-coach" : "nav-link"}
+                style={isLearn ? {} : {fontWeight: 500, color: 'var(--text-secondary)'}}
+              >
+                Learn
+              </Link>
+              <Link
+                href="/chat"
+                className={isAICoach ? "nav-ai-coach" : "nav-link"}
+                style={isAICoach ? {} : {fontWeight: 500, color: 'var(--text-secondary)'}}
+              >
+                AI Coach
+              </Link>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className={pathname.startsWith('/admin') ? "nav-ai-coach" : "nav-admin"}
+                  style={pathname.startsWith('/admin') ? {} : undefined}
+                >
+                  Admin
+                </Link>
+              )}
+            </>
+          )}
+
+          {/* Auth Section */}
+          {!isLoading && (
+            <div className="flex items-center space-x-4">
+              {user ? (
+                <>
+                  <span className="text-sm" style={{color: 'var(--text-secondary)'}}>
+                    {user.email}
+                  </span>
+                  <button
+                    onClick={signOut}
+                    className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
+                    style={{
+                      backgroundColor: 'var(--accent-red)',
+                      color: 'var(--white)'
+                    }}
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
+                  style={{
+                    backgroundColor: 'var(--accent-blue)',
+                    color: 'var(--white)'
+                  }}
+                >
+                  Sign In
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -69,39 +111,67 @@ export default function Navigation() {
       {isMobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3" style={{backgroundColor: 'var(--white)', borderTop: '1px solid #e5e7eb'}}>
-            <Link
-              href="/learn"
-              className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                isLearn
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Learn
-            </Link>
-            <Link
-              href="/chat"
-              className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                isAICoach
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              AI Coach
-            </Link>
-            <Link
-              href="/admin"
-              className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                isAdmin
-                  ? 'bg-red-100 text-red-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Admin
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href="/learn"
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    isLearn
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Learn
+                </Link>
+                <Link
+                  href="/chat"
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    isAICoach
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  AI Coach
+                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      pathname.startsWith('/admin')
+                        ? 'bg-red-100 text-red-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="px-3 py-2 text-sm text-gray-600">
+                    {user.email}
+                  </div>
+                  <button
+                    onClick={() => {
+                      signOut()
+                      setIsMobileMenuOpen(false)
+                    }}
+                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="block px-3 py-2 rounded-md text-base font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       )}
