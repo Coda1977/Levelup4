@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
 type AuthContextType = {
@@ -33,10 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
+  const supabase = createClient()
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', { hasSession: !!session, user: session?.user?.email })
       setSession(session)
       setUser(session?.user ?? null)
       checkAdminStatus(session?.user?.id)
@@ -44,13 +46,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change:', { event, hasSession: !!session, user: session?.user?.email })
       setSession(session)
       setUser(session?.user ?? null)
       checkAdminStatus(session?.user?.id)
 
-      if (_event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT') {
         router.push('/')
+      } else if (event === 'SIGNED_IN') {
+        // Refresh the page to ensure cookies are properly set
+        router.refresh()
       }
     })
 
@@ -75,7 +81,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    console.log('Attempting sign in for:', email)
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password })
+    console.log('Sign in result:', { error, user: data?.user?.email })
+
+    if (!error) {
+      // Force page refresh to ensure cookies are set
+      router.refresh()
+    }
+
     return { error }
   }
 
@@ -93,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Try to sign in immediately after signup
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (!signInError) {
-        // User is signed in, no need to return error
+        router.refresh()
         return { error: null }
       }
     }
@@ -103,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut()
+    router.push('/')
   }
 
   const resetPassword = async (email: string) => {

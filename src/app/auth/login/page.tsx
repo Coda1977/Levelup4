@@ -19,12 +19,17 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
+    console.log('Auth attempt:', { email, isSignUp })
+
     try {
       const { error } = isSignUp
         ? await signUp(email, password)
         : await signIn(email, password)
 
+      console.log('Auth response:', { error, isSignUp })
+
       if (error) {
+        console.error('Auth error:', error)
         // Handle specific error messages
         if (error.message.includes('Email not confirmed')) {
           setError('Please check your email to verify your account.')
@@ -36,10 +41,13 @@ export default function LoginPage() {
         setLoading(false)
       } else {
         // Success - redirect to learn page for both signup and signin
+        console.log('Auth success, redirecting to /learn')
         setLoading(false)
+        // Use Next.js router for navigation
         router.push('/learn')
       }
     } catch (err) {
+      console.error('Unexpected error:', err)
       setError('An unexpected error occurred. Please try again.')
       setLoading(false)
     }
