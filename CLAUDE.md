@@ -67,8 +67,64 @@ src/
   npm run test:ci          # CI-ready testing
   ```
 
+## AI Chat Coach Feature 🎯 [IN PROGRESS]
+- **Claude-powered Chat**: Management coaching with Claude 3.5 Sonnet
+- **Smart Context Selection**: Automatically selects relevant chapters based on query
+- **Conversation Management**: Create, continue, and delete conversations
+- **Follow-up Suggestions**: Two contextual questions after each response
+- **Local Storage**: Conversations persist without authentication
+- **Mobile Responsive**: Full-featured chat on all devices
+- **Auto-naming**: Conversations named based on first message
+
+### Current Development Status (Branch: ai-chat)
+**Working Features:**
+- ✅ Basic chat functionality with Claude API
+- ✅ Chapter content integration (up to 3000 chars per chapter)
+- ✅ Local storage for conversations
+- ✅ Mobile-responsive UI
+- ✅ Follow-up question generation
+
+**Recent Improvements:**
+- Simplified system prompt from 50+ lines to ~15 for clarity
+- Added emotional intelligence (recognizes frustration, provides acknowledgment)
+- Fixed "share example" loop - AI now works with examples already provided
+- Made conversation more natural, less framework-obsessed
+- Improved follow-up questions to be specific, not generic
+
+**Still Needs Work:**
+- Sometimes forces frameworks when simple advice would be better
+- Occasionally invents content not in chapters
+- Follow-up questions could be more insightful
+- Needs better handling of topics not covered in chapters
+- Response consistency varies between conversations
+
+### Chat Philosophy
+The AI coach should feel like talking to an experienced manager who:
+- Knows your content but isn't rigid about it
+- Acknowledges emotions before jumping to solutions
+- Works with specific examples users provide
+- Admits when content doesn't exist and still helps
+- Varies responses naturally (not templated)
+
+### Migration Notes for Future Auth
+When implementing authentication, migrate local storage to database:
+```javascript
+// Current: localStorage (src/lib/chat-storage.ts)
+LocalUserSession {
+  userId: string (generated)
+  completedChapters: string[]
+  conversations: Conversation[]
+}
+
+// Future: Supabase tables
+users_table → userId, email, profile
+conversations_table → id, user_id, title, created_at
+messages_table → id, conversation_id, role, content, timestamp
+user_progress_table → user_id, chapter_id, completed_at
+```
+
 ## Still Need
-- **User Authentication**: Login + progress tracking
+- **User Authentication**: Login + progress tracking (integrate with chat)
 - **Search**: Find chapters across categories
 - **Dark Mode**: Theme switching
 - **Learning Paths**: Guided chapter sequences

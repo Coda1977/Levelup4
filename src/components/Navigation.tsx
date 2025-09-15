@@ -7,10 +7,10 @@ import { useState } from 'react'
 export default function Navigation() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  
+
   // Determine which section we're in
   const isLearn = pathname.startsWith('/learn')
-  const isAICoach = pathname.startsWith('/ai-coach')
+  const isAICoach = pathname.startsWith('/ai-coach') || pathname.startsWith('/chat')
   const isAdmin = pathname.startsWith('/admin')
   
   return (
@@ -23,22 +23,22 @@ export default function Navigation() {
         
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">
-          <Link 
-            href="/learn" 
+          <Link
+            href="/learn"
             className={isLearn ? "nav-ai-coach" : "nav-link"}
             style={isLearn ? {} : {fontWeight: 500, color: 'var(--text-secondary)'}}
           >
             Learn
           </Link>
-          <Link 
-            href="/ai-coach" 
+          <Link
+            href="/chat"
             className={isAICoach ? "nav-ai-coach" : "nav-link"}
             style={isAICoach ? {} : {fontWeight: 500, color: 'var(--text-secondary)'}}
           >
             AI Coach
           </Link>
-          <Link 
-            href="/admin" 
+          <Link
+            href="/admin"
             className={isAdmin ? "nav-ai-coach" : "nav-admin"}
             style={isAdmin ? {} : undefined}
           >
@@ -72,8 +72,8 @@ export default function Navigation() {
             <Link
               href="/learn"
               className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                isLearn 
-                  ? 'bg-indigo-100 text-indigo-700' 
+                isLearn
+                  ? 'bg-indigo-100 text-indigo-700'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               onClick={() => setIsMobileMenuOpen(false)}
@@ -81,10 +81,10 @@ export default function Navigation() {
               Learn
             </Link>
             <Link
-              href="/ai-coach"
+              href="/chat"
               className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                isAICoach 
-                  ? 'bg-indigo-100 text-indigo-700' 
+                isAICoach
+                  ? 'bg-indigo-100 text-indigo-700'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               onClick={() => setIsMobileMenuOpen(false)}
@@ -94,8 +94,8 @@ export default function Navigation() {
             <Link
               href="/admin"
               className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                isAdmin 
-                  ? 'bg-red-100 text-red-700' 
+                isAdmin
+                  ? 'bg-red-100 text-red-700'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               onClick={() => setIsMobileMenuOpen(false)}
