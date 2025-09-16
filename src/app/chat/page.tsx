@@ -1,5 +1,5 @@
-import ChatClient from './ChatClient'
+import ChatClientWithDB from './ChatClientWithDB'
 
 export default function ChatPage() {
-  return <ChatClient />
+  return <ChatClientWithDB />
 }

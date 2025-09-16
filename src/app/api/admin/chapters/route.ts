@@ -3,8 +3,17 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET() {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access not configured' },
+        { status: 500 }
+      )
+    }
+
+    const admin = supabaseAdmin
+
     // Get categories
-    const { data: categories, error: categoriesError } = await supabaseAdmin
+    const { data: categories, error: categoriesError } = await admin
       .from('categories')
       .select('*')
       .order('sort_order')
@@ -12,7 +21,7 @@ export async function GET() {
     if (categoriesError) throw categoriesError
 
     // Get chapters with category info
-    const { data: chapters, error: chaptersError } = await supabaseAdmin
+    const { data: chapters, error: chaptersError } = await admin
       .from('chapters')
       .select(`
         *,
@@ -39,9 +48,17 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access not configured' },
+        { status: 500 }
+      )
+    }
+
+    const admin = supabaseAdmin
     const formData = await request.json()
-    
-    const { error } = await supabaseAdmin
+
+    const { error } = await admin
       .from('chapters')
       .insert(formData)
 
@@ -56,16 +73,24 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access not configured' },
+        { status: 500 }
+      )
+    }
+
+    const admin = supabaseAdmin
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
+
     if (!id) {
       return NextResponse.json({ error: 'Chapter ID required' }, { status: 400 })
     }
-    
+
     const formData = await request.json()
-    
-    const { data, error } = await supabaseAdmin
+
+    const { data, error } = await admin
       .from('chapters')
       .update(formData)
       .eq('id', id)
@@ -83,14 +108,22 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access not configured' },
+        { status: 500 }
+      )
+    }
+
+    const admin = supabaseAdmin
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
+
     if (!id) {
       return NextResponse.json({ error: 'Chapter ID required' }, { status: 400 })
     }
 
-    const { error } = await supabaseAdmin
+    const { error } = await admin
       .from('chapters')
       .delete()
       .eq('id', id)

@@ -160,7 +160,7 @@ describe('LearnPage', () => {
       const aiCoachButton = screen.getByText('Ask AI Coach')
       fireEvent.click(aiCoachButton)
 
-      expect(mockLocation.href).toBe('/ai-coach')
+      expect(mockLocation.href).toBe('/chat')
     })
   })
 

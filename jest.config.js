@@ -11,7 +11,7 @@ const customJestConfig = {
     '<rootDir>/src/**/__tests__/**/*.(test|spec).(ts|tsx|js|jsx)',
     '<rootDir>/src/**/*.(test|spec).(ts|tsx|js|jsx)'
   ],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   collectCoverageFrom: [

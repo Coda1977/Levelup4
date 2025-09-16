@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import ChapterAudioPlayer from '@/components/ChapterAudioPlayer'
 import { sanitizeHtml } from '@/lib/sanitize'
+import { useAuth } from '@/contexts/AuthContext'
+import { createClient } from '@/lib/supabase-browser'
 
 type Category = {
   id: string
@@ -40,6 +42,9 @@ type Chapter = {
 
 export default function ChapterPage() {
   const params = useParams()
+  const router = useRouter()
+  const { user } = useAuth()
+  const supabase = createClient()
   const [chapter, setChapter] = useState<Chapter | null>(null)
   const [allChapters, setAllChapters] = useState<Chapter[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -47,12 +52,17 @@ export default function ChapterPage() {
   const [error, setError] = useState<string | null>(null)
   const [readingProgress, setReadingProgress] = useState(0)
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(0)
+  const [isCompleted, setIsCompleted] = useState(false)
+  const [completingChapter, setCompletingChapter] = useState(false)
 
   useEffect(() => {
     if (params.id) {
       loadChapter(params.id as string)
+      if (user) {
+        checkChapterCompletion(params.id as string)
+      }
     }
-  }, [params.id])
+  }, [params.id, user])
 
   const loadChapter = async (id: string) => {
     setLoading(true)
@@ -80,6 +90,52 @@ export default function ChapterPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const checkChapterCompletion = async (chapterId: string) => {
+    try {
+      const response = await fetch('/api/progress', {
+        credentials: 'include',
+      })
+
+      if (response.ok) {
+        const { progress } = await response.json()
+        const isComplete = progress.some((p: any) => p.chapter_id === chapterId)
+        setIsCompleted(isComplete)
+        console.log('Chapter completion status:', { chapterId, isComplete })
+      }
+    } catch (error) {
+      console.error('Error checking completion:', error)
+    }
+  }
+
+  const markChapterComplete = async () => {
+    if (!chapter || completingChapter) return
+
+    setCompletingChapter(true)
+
+    try {
+      const response = await fetch('/api/progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ chapterId: chapter.id }),
+      })
+
+      if (response.ok) {
+        setIsCompleted(true)
+        console.log('Chapter marked as complete')
+      } else {
+        const error = await response.text()
+        console.error('Failed to mark chapter complete:', error)
+      }
+    } catch (error) {
+      console.error('Error marking complete:', error)
+    }
+
+    setCompletingChapter(false)
   }
 
   const calculateReadingTime = (content: string) => {
@@ -670,6 +726,108 @@ export default function ChapterPage() {
             </div>
           )}
         </div>
+
+        {/* Chapter Completion and Navigation Section */}
+        {user && (
+          <div className="mt-16 space-y-6">
+            {/* Completion Status */}
+            <div className="p-8 rounded-2xl shadow-xl text-center" style={{backgroundColor: 'var(--white)', border: '2px solid var(--accent-blue)'}}>
+              {isCompleted ? (
+                <div className="flex items-center justify-center gap-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style={{backgroundColor: 'var(--accent-green, #10b981)'}}>
+                    ✓
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-xl font-bold" style={{color: 'var(--text-primary)'}}>
+                      Chapter Completed
+                    </h3>
+                    <p className="text-sm" style={{color: 'var(--text-secondary)'}}>
+                      You've finished this chapter
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-2xl font-bold mb-4" style={{color: 'var(--text-primary)'}}>
+                    Finished Reading?
+                  </h3>
+                  <p className="text-lg mb-6" style={{color: 'var(--text-secondary)'}}>
+                    Mark this chapter as complete to track your progress
+                  </p>
+                  <button
+                    onClick={markChapterComplete}
+                    disabled={completingChapter}
+                    className="px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 hover-lift inline-flex items-center gap-3"
+                    style={{
+                      backgroundColor: completingChapter ? '#ccc' : 'var(--accent-green, #10b981)',
+                      color: 'var(--white)',
+                      cursor: completingChapter ? 'wait' : 'pointer'
+                    }}
+                  >
+                    {completingChapter ? (
+                      <>
+                        <span>Marking Complete...</span>
+                        <span className="animate-spin">⏳</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Mark as Complete</span>
+                        <span className="text-xl">✓</span>
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex gap-4 justify-center">
+              {(() => {
+                const categoryChapters = allChapters
+                  .filter(c => c.category_id === chapter.category_id)
+                  .sort((a, b) => a.sort_order - b.sort_order)
+                const currentIndex = categoryChapters.findIndex(c => c.id === chapter.id)
+                const nextChapter = categoryChapters[currentIndex + 1]
+                const prevChapter = categoryChapters[currentIndex - 1]
+
+                return (
+                  <>
+                    {prevChapter && (
+                      <button
+                        onClick={() => router.push(`/learn/${prevChapter.id}`)}
+                        className="px-6 py-3 rounded-full font-semibold transition-all duration-300 hover-lift inline-flex items-center gap-2"
+                        style={{backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', border: '2px solid var(--border-color)'}}
+                      >
+                        <span>←</span>
+                        <span>Previous Chapter</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => router.push('/learn')}
+                      className="px-6 py-3 rounded-full font-semibold transition-all duration-300 hover-lift inline-flex items-center gap-2"
+                      style={{backgroundColor: 'var(--accent-yellow)', color: 'var(--text-primary)'}}
+                    >
+                      <span>📚</span>
+                      <span>All Chapters</span>
+                    </button>
+
+                    {nextChapter && (
+                      <button
+                        onClick={() => router.push(`/learn/${nextChapter.id}`)}
+                        className="px-6 py-3 rounded-full font-bold transition-all duration-300 hover-lift inline-flex items-center gap-2"
+                        style={{backgroundColor: 'var(--accent-blue)', color: 'var(--white)'}}
+                      >
+                        <span>Next Chapter</span>
+                        <span>→</span>
+                      </button>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+        )}
       </section>
     </div>
   )

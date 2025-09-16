@@ -8,10 +8,11 @@ import { useRouter } from 'next/navigation'
 type AuthContextType = {
   user: User | null
   session: Session | null
+  profile: { firstName: string; lastName: string } | null
   isLoading: boolean
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string) => Promise<{ error: any }>
+  signUp: (email: string, password: string, profile?: { firstName: string; lastName: string }) => Promise<{ error: any }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: any }>
 }
@@ -19,6 +20,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
+  profile: null,
   isLoading: true,
   isAdmin: false,
   signIn: async () => ({ error: null }),
@@ -30,53 +32,112 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
+  const [profile, setProfile] = useState<{ firstName: string; lastName: string } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
+    let isUnmounted = false
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', { hasSession: !!session, user: session?.user?.email })
-      setSession(session)
-      setUser(session?.user ?? null)
-      checkAdminStatus(session?.user?.id)
-      setIsLoading(false)
-    })
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error('Error getting initial session:', error)
+          if (!isUnmounted) {
+            setIsLoading(false)
+          }
+          return
+        }
+
+        console.log('Initial session check:', {
+          hasSession: !!session,
+          user: session?.user?.email,
+          cookies: document.cookie
+        })
+
+        if (!isUnmounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
+          await checkAdminStatus(session?.user?.id)
+          setIsLoading(false)
+        }
+      } catch (error) {
+        console.error('Error in getInitialSession:', error)
+        if (!isUnmounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    getInitialSession()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', { event, hasSession: !!session, user: session?.user?.email })
-      setSession(session)
-      setUser(session?.user ?? null)
-      checkAdminStatus(session?.user?.id)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', {
+        event,
+        hasSession: !!session,
+        user: session?.user?.email,
+        timestamp: new Date().toISOString()
+      })
 
-      if (event === 'SIGNED_OUT') {
-        router.push('/')
-      } else if (event === 'SIGNED_IN') {
-        // Refresh the page to ensure cookies are properly set
-        router.refresh()
+      if (!isUnmounted) {
+        setSession(session)
+        setUser(session?.user ?? null)
+        await checkAdminStatus(session?.user?.id)
+
+        // Force page refresh for auth state changes to ensure cookies sync
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          // Small delay to ensure cookies are set
+          setTimeout(() => {
+            if (!isUnmounted) {
+              router.refresh()
+            }
+          }, 100)
+        }
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isUnmounted = true
+      subscription.unsubscribe()
+    }
   }, [router])
 
   const checkAdminStatus = async (userId?: string) => {
     if (!userId) {
       setIsAdmin(false)
+      setProfile(null)
       return
     }
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('is_admin')
-      .eq('id', userId)
-      .single()
+    try {
+      // Fetch user profile and admin status from user_profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('first_name, last_name, is_admin')
+        .eq('id', userId)
+        .single()
 
-    if (!error && data) {
-      setIsAdmin(data.is_admin || false)
+      if (profileError) {
+        console.log('No profile data found for user (this is normal for new users):', profileError.message)
+        setProfile(null)
+        setIsAdmin(false)
+      } else if (profileData) {
+        setProfile({
+          firstName: profileData.first_name || '',
+          lastName: profileData.last_name || ''
+        })
+        setIsAdmin(profileData.is_admin || false)
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error)
+      setIsAdmin(false)
+      setProfile(null)
     }
   }
 
@@ -85,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error, data } = await supabase.auth.signInWithPassword({ email, password })
     console.log('Sign in result:', { error, user: data?.user?.email })
 
-    if (!error) {
+    if (!error && data.user) {
       // Force page refresh to ensure cookies are set
       router.refresh()
     }
@@ -93,23 +154,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error }
   }
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, profile?: { firstName: string; lastName: string }) => {
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/learn`
+        data: profile ? {
+          first_name: profile.firstName,
+          last_name: profile.lastName
+        } : undefined
       }
     })
 
-    // If signup successful and user is confirmed, sign them in automatically
+    // If signup successful, the auth state listener will handle navigation
     if (!error && data.user) {
-      // Try to sign in immediately after signup
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-      if (!signInError) {
-        router.refresh()
-        return { error: null }
-      }
+      // Force a refresh to ensure cookies are set
+      router.refresh()
+      return { error: null }
     }
 
     return { error }
@@ -131,6 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       user,
       session,
+      profile,
       isLoading,
       isAdmin,
       signIn,

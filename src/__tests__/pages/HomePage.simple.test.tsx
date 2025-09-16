@@ -10,12 +10,8 @@ const mockIntersectionObserver = jest.fn().mockImplementation(() => ({
 }))
 global.IntersectionObserver = mockIntersectionObserver
 
-// Mock window.location
-Object.defineProperty(window, 'location', {
-  value: { href: '' },
-  writable: true,
-  configurable: true
-})
+// Use the existing window.location mock from jest.setup.js
+// No need to redefine it
 
 describe('HomePage - Simple Tests', () => {
   beforeEach(() => {

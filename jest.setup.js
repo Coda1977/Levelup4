@@ -1,4 +1,9 @@
 import '@testing-library/jest-dom'
+import dotenv from 'dotenv'
+import 'cross-fetch/polyfill'
+
+// Load test environment variables
+dotenv.config({ path: '.env.test' })
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
@@ -43,17 +48,25 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
-// Mock window.location
-delete window.location
-window.location = {
-  href: '',
-  assign: jest.fn(),
-  replace: jest.fn(),
-  reload: jest.fn()
+// Mock window.location - check if it's already defined
+if (!window.location) {
+  Object.defineProperty(window, 'location', {
+    value: {
+      href: '',
+      assign: jest.fn(),
+      replace: jest.fn(),
+      reload: jest.fn(),
+      pathname: '/',
+      search: '',
+      hash: ''
+    },
+    writable: true,
+    configurable: true
+  })
 }
 
-// Mock fetch
-global.fetch = jest.fn()
+// Don't mock fetch - we want real API calls to Supabase
+// If fetch is not available in Node, it will be polyfilled by Supabase client
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = jest.fn(() => 'mock-url')

@@ -2,17 +2,15 @@ import React from 'react'
 import { render, screen, fireEvent, act } from '../utils/test-utils'
 import HomePage from '@/app/page'
 
-// Mock window.location
-const mockLocation = {
-  href: '',
-  assign: jest.fn(),
-  replace: jest.fn()
-}
+// Use the existing window.location mock from jest.setup.js
+const mockLocation = window.location as any
 
-// Delete the existing property first
-delete (window as any).location
-// Then define the mock
-window.location = mockLocation as any
+// Reset mock functions before each test
+beforeEach(() => {
+  mockLocation.href = ''
+  mockLocation.assign.mockClear()
+  mockLocation.replace.mockClear()
+})
 
 // Mock IntersectionObserver for scroll animations
 const mockObserver = jest.fn().mockImplementation(() => ({

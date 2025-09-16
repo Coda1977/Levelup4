@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { SYSTEM_PROMPT } from '@/lib/system-prompt'
+import { createClient } from '@/lib/supabase-server'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
@@ -89,8 +90,11 @@ function selectRelevantChapters(query: string, chapters: any[], limit: number = 
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
     const body: ChatRequest = await request.json()
-    const { message, chapters = [], completedChapters = [], previousMessages = [] } = body
+    const { message, conversationId, chapters = [], completedChapters = [], previousMessages = [] } = body
 
     if (!message) {
       return new Response('Message is required', { status: 400 })
@@ -98,6 +102,36 @@ export async function POST(request: NextRequest) {
 
     if (!anthropic) {
       return new Response('AI service not configured. Please contact support.', { status: 500 })
+    }
+
+    // If user is authenticated and has a conversationId, save the user message
+    let dbConversationId = conversationId
+    if (user && !dbConversationId) {
+      // Create a new conversation if needed
+      const { data: newConv } = await supabase
+        .from('conversations')
+        .insert({
+          user_id: user.id,
+          title: message.substring(0, 100) + (message.length > 100 ? '...' : ''),
+          selected_chapters: chapters.slice(0, 3).map(ch => ch.id)
+        })
+        .select()
+        .single()
+
+      if (newConv) {
+        dbConversationId = newConv.id
+      }
+    }
+
+    // Save user message to database if authenticated
+    if (user && dbConversationId) {
+      await supabase
+        .from('messages')
+        .insert({
+          conversation_id: dbConversationId,
+          role: 'user',
+          content: message
+        })
     }
 
     // Select relevant chapters for context
@@ -160,6 +194,15 @@ ${chapterContext}`
 
     // Create a streaming response
     const encoder = new TextEncoder()
+
+    // Pass necessary variables to the stream closure
+    const streamData = {
+      user,
+      dbConversationId,
+      supabase,
+      relevantChapters
+    }
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -183,7 +226,7 @@ ${chapterContext}`
           }
 
           // Extract follow-up questions from the complete response
-          const followupRegex = /\[FOLLOWUP_1\]\s*(.*?)\s*\[FOLLOWUP_2\]\s*(.*?)$/s
+          const followupRegex = /\[FOLLOWUP_1\]\s*(.*?)\s*\[FOLLOWUP_2\]\s*(.*?)$/
           const followupMatch = fullResponse.match(followupRegex)
           let followups: string[] = []
 
@@ -193,10 +236,27 @@ ${chapterContext}`
             followups = [followup1, followup2].filter(f => f.length > 0)
           }
 
+          // Save AI response to database if authenticated
+          if (streamData.user && streamData.dbConversationId) {
+            await streamData.supabase
+              .from('messages')
+              .insert({
+                conversation_id: streamData.dbConversationId,
+                role: 'assistant',
+                content: fullResponse,
+                followups,
+                relevant_chapters: streamData.relevantChapters.map(ch => ({
+                  id: ch.id,
+                  title: ch.title
+                }))
+              })
+          }
+
           // Send the follow-ups at the end
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             followups,
-            relevantChapters: relevantChapters.map(ch => ({
+            conversationId: streamData.dbConversationId,
+            relevantChapters: streamData.relevantChapters.map(ch => ({
               id: ch.id,
               title: ch.title
             }))

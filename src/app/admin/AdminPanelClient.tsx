@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import ChapterForm from '@/components/admin/ChapterForm'
 import ChapterList from '@/components/admin/ChapterList'
 import { useData, type Chapter, type Category } from '@/contexts/DataContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function AdminPanelClient() {
-  const { 
-    chapters, 
-    categories, 
-    chaptersLoading, 
+  const {
+    chapters,
+    categories,
+    chaptersLoading,
     categoriesLoading,
     chaptersError,
     categoriesError,
@@ -18,17 +20,27 @@ export default function AdminPanelClient() {
     deleteChapter,
     addChapter
   } = useData()
-  
+
+  const { isAdmin, isLoading: authLoading } = useAuth()
+  const router = useRouter()
+
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [editingChapter, setEditingChapter] = useState<Chapter | null>(null)
   const [showForm, setShowForm] = useState(false)
-  
-  const loading = chaptersLoading || categoriesLoading
+
+  const loading = chaptersLoading || categoriesLoading || authLoading
 
   useEffect(() => {
-    fetchChaptersAndCategories()
-  }, [fetchChaptersAndCategories])
+    // Only fetch if user is admin
+    if (!authLoading && !isAdmin) {
+      router.push('/learn')
+      return
+    }
+    if (isAdmin) {
+      fetchChaptersAndCategories()
+    }
+  }, [fetchChaptersAndCategories, isAdmin, authLoading, router])
 
   // Update local error state when context errors change
   useEffect(() => {

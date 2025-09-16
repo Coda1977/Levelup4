@@ -8,11 +8,11 @@ import { useAuth } from '@/contexts/AuthContext'
 export default function Navigation() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const { user, signOut, isAdmin, isLoading } = useAuth()
+  const { user, profile, signOut, isAdmin, isLoading } = useAuth()
 
   // Determine which section we're in
   const isLearn = pathname.startsWith('/learn')
-  const isAICoach = pathname.startsWith('/ai-coach') || pathname.startsWith('/chat')
+  const isAICoach = pathname.startsWith('/chat')
   const isAdminPage = pathname.startsWith('/admin')
   
   return (
@@ -58,19 +58,29 @@ export default function Navigation() {
             <div className="flex items-center space-x-4">
               {user ? (
                 <>
-                  <span className="text-sm" style={{color: 'var(--text-secondary)'}}>
-                    {user.email}
-                  </span>
-                  <button
-                    onClick={signOut}
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
-                    style={{
-                      backgroundColor: 'var(--accent-red)',
-                      color: 'var(--white)'
-                    }}
-                  >
-                    Sign Out
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+                      style={{
+                        backgroundColor: 'var(--accent-blue)',
+                        fontFamily: 'var(--font-heading)'
+                      }}
+                    >
+                      {profile?.firstName && profile?.lastName
+                        ? `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase()
+                        : user.email?.split('@')[0].slice(0, 2).toUpperCase() || 'U'}
+                    </div>
+                    <button
+                      onClick={signOut}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-red-600 border border-red-500"
+                      style={{
+                        backgroundColor: '#ef4444',
+                        color: 'white'
+                      }}
+                    >
+                      Sign Out
+                    </button>
+                  </div>
                 </>
               ) : (
                 <Link

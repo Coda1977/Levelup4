@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progress Debug Tool</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #003566;
+      margin-bottom: 10px;
+    }
+    .status {
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-family: monospace;
+      white-space: pre-wrap;
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+    }
+    .error {
+      background: #fee;
+      border-color: #fcc;
+      color: #c00;
+    }
+    .success {
+      background: #efe;
+      border-color: #cfc;
+      color: #060;
+    }
+    .info {
+      background: #e6f3ff;
+      border-color: #b3d9ff;
+      color: #004080;
+    }
+    button {
+      background: #003566;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #004080;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .chapter-list {
+      margin: 20px 0;
+    }
+    .chapter-item {
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chapter-item.completed {
+      background: #e6ffe6;
+      border-color: #9c9;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e0e0e0;
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Progress Debug Tool</h1>
+    <p>This tool helps diagnose issues with chapter completion tracking.</p>
+
+    <div>
+      <button onclick="checkSession()">1. Check Session</button>
+      <button onclick="fetchProgress()">2. Fetch Progress</button>
+      <button onclick="testComplete()">3. Test Complete</button>
+      <button onclick="clearAllProgress()">4. Clear All Progress</button>
+    </div>
+
+    <div id="output" class="status">
+      Click the buttons above to start debugging...
+    </div>
+
+    <div class="progress-bar">
+      <div id="progressBar" class="progress-fill" style="width: 0%">0%</div>
+    </div>
+
+    <div id="chapterList" class="chapter-list"></div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+    const supabaseUrl = 'https://exxildftqhnlupxdlqfn.supabase.co'
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4eGlsZGZ0cWhubHVweGRscWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYwNzAwOTAsImV4cCI6MjA1MTY0NjA5MH0.lIjwB6K5cM_MmphOlVUvdDvQkXx4FkyRf7sJfLe5HHc'
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+    let currentUser = null
+    let chapters = []
+    let completedChapterIds = []
+
+    function log(message, type = 'info') {
+      const output = document.getElementById('output')
+      output.className = `status ${type}`
+      output.textContent = message
+    }
+
+    function updateChapterList() {
+      const listEl = document.getElementById('chapterList')
+      if (chapters.length === 0) {
+        listEl.innerHTML = '<p>No chapters loaded yet. Click "Fetch Progress" first.</p>'
+        return
+      }
+
+      listEl.innerHTML = '<h3>Chapter Status:</h3>' + chapters.map(chapter => `
+        <div class="chapter-item ${completedChapterIds.includes(chapter.id) ? 'completed' : ''}">
+          <span>${completedChapterIds.includes(chapter.id) ? '✅' : '⬜'} ${chapter.title}</span>
+          <button onclick="toggleChapter('${chapter.id}')" style="padding: 5px 10px; font-size: 12px;">
+            ${completedChapterIds.includes(chapter.id) ? 'Mark Incomplete' : 'Mark Complete'}
+          </button>
+        </div>
+      `).join('')
+
+      // Update progress bar
+      const progress = chapters.length > 0 ? (completedChapterIds.length / chapters.length * 100).toFixed(0) : 0
+      const progressBar = document.getElementById('progressBar')
+      progressBar.style.width = `${progress}%`
+      progressBar.textContent = `${progress}%`
+    }
+
+    window.checkSession = async function() {
+      log('Checking session...')
+
+      const { data: { session }, error } = await supabase.auth.getSession()
+
+      if (error) {
+        log(`❌ Error: ${error.message}`, 'error')
+        return
+      }
+
+      if (!session) {
+        log('❌ No active session. Please log in at http://localhost:3002/auth/login', 'error')
+        return
+      }
+
+      currentUser = session.user
+      log(`✅ Logged in as: ${currentUser.email}\nUser ID: ${currentUser.id}`, 'success')
+    }
+
+    window.fetchProgress = async function() {
+      if (!currentUser) {
+        log('❌ Please check session first!', 'error')
+        return
+      }
+
+      log('Fetching chapters and progress...')
+
+      // Fetch all chapters
+      const { data: chaptersData, error: chaptersError } = await supabase
+        .from('chapters')
+        .select('id, title, display_order')
+        .order('display_order')
+
+      if (chaptersError) {
+        log(`❌ Error fetching chapters: ${chaptersError.message}`, 'error')
+        return
+      }
+
+      chapters = chaptersData || []
+
+      // Fetch user progress
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('chapter_id')
+        .eq('user_id', currentUser.id)
+
+      if (progressError) {
+        log(`❌ Error fetching progress: ${progressError.message}`, 'error')
+        return
+      }
+
+      completedChapterIds = progressData ? progressData.map(p => p.chapter_id) : []
+
+      const message = `✅ Found ${chapters.length} chapters
+✅ You've completed ${completedChapterIds.length} chapters
+Progress: ${((completedChapterIds.length / chapters.length) * 100).toFixed(1)}%`
+
+      log(message, 'success')
+      updateChapterList()
+    }
+
+    window.toggleChapter = async function(chapterId) {
+      if (!currentUser) {
+        log('❌ Please check session first!', 'error')
+        return
+      }
+
+      const isCompleted = completedChapterIds.includes(chapterId)
+      const chapter = chapters.find(c => c.id === chapterId)
+
+      if (isCompleted) {
+        // Delete progress
+        log(`Removing completion for: ${chapter.title}...`)
+
+        const { error } = await supabase
+          .from('user_progress')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('chapter_id', chapterId)
+
+        if (error) {
+          log(`❌ Error: ${error.message}`, 'error')
+        } else {
+          completedChapterIds = completedChapterIds.filter(id => id !== chapterId)
+          log(`✅ Removed completion for: ${chapter.title}`, 'success')
+          updateChapterList()
+        }
+      } else {
+        // Add progress
+        log(`Marking complete: ${chapter.title}...`)
+
+        const { data, error } = await supabase
+          .from('user_progress')
+          .insert({
+            user_id: currentUser.id,
+            chapter_id: chapterId
+          })
+          .select()
+
+        if (error) {
+          log(`❌ Error: ${error.message}\nCode: ${error.code}`, 'error')
+        } else {
+          completedChapterIds.push(chapterId)
+          log(`✅ Marked complete: ${chapter.title}\nData: ${JSON.stringify(data, null, 2)}`, 'success')
+          updateChapterList()
+        }
+      }
+    }
+
+    window.testComplete = async function() {
+      if (!currentUser) {
+        log('❌ Please check session first!', 'error')
+        return
+      }
+
+      if (chapters.length === 0) {
+        log('❌ Please fetch progress first!', 'error')
+        return
+      }
+
+      const uncompletedChapter = chapters.find(c => !completedChapterIds.includes(c.id))
+
+      if (!uncompletedChapter) {
+        log('ℹ️ All chapters are already completed!', 'info')
+        return
+      }
+
+      await toggleChapter(uncompletedChapter.id)
+    }
+
+    window.clearAllProgress = async function() {
+      if (!currentUser) {
+        log('❌ Please check session first!', 'error')
+        return
+      }
+
+      if (!confirm('Are you sure you want to clear ALL your progress?')) {
+        return
+      }
+
+      log('Clearing all progress...')
+
+      const { error } = await supabase
+        .from('user_progress')
+        .delete()
+        .eq('user_id', currentUser.id)
+
+      if (error) {
+        log(`❌ Error: ${error.message}`, 'error')
+      } else {
+        completedChapterIds = []
+        log('✅ All progress cleared!', 'success')
+        updateChapterList()
+      }
+    }
+
+    // Auto-check session on load
+    checkSession()
+  </script>
+</body>
+</html>

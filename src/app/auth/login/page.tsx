@@ -1,18 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, user, isLoading: authLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [redirectTo, setRedirectTo] = useState('/learn')
+
+  useEffect(() => {
+    setRedirectTo(searchParams.get('redirectTo') || '/learn')
+  }, [searchParams])
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      router.push(redirectTo)
+    }
+  }, [user, authLoading, router, redirectTo])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,7 +38,7 @@ export default function LoginPage() {
 
     try {
       const { error } = isSignUp
-        ? await signUp(email, password)
+        ? await signUp(email, password, { firstName, lastName })
         : await signIn(email, password)
 
       console.log('Auth response:', { error, isSignUp })
@@ -40,17 +55,28 @@ export default function LoginPage() {
         }
         setLoading(false)
       } else {
-        // Success - redirect to learn page for both signup and signin
-        console.log('Auth success, redirecting to /learn')
+        // Success - redirect to intended destination or learn page
+        console.log('Auth success, redirecting to:', redirectTo)
         setLoading(false)
-        // Use Next.js router for navigation
-        router.push('/learn')
+        // Use window.location for a full page refresh to ensure middleware runs
+        window.location.href = redirectTo
       }
     } catch (err) {
       console.error('Unexpected error:', err)
       setError('An unexpected error occurred. Please try again.')
       setLoading(false)
     }
+  }
+
+  // Show loading while checking auth status
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-center">
+          <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -62,6 +88,38 @@ export default function LoginPage() {
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required={isSignUp}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ borderColor: 'var(--border-color)' }}
+                    placeholder="John"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required={isSignUp}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ borderColor: 'var(--border-color)' }}
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                 Email
@@ -86,7 +144,6 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 style={{ borderColor: 'var(--border-color)' }}
                 placeholder="••••••••"
@@ -122,6 +179,8 @@ export default function LoginPage() {
               onClick={() => {
                 setIsSignUp(!isSignUp)
                 setError(null)
+                setFirstName('')
+                setLastName('')
               }}
               className="text-sm hover:underline"
               style={{ color: 'var(--accent-blue)' }}
@@ -138,5 +197,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

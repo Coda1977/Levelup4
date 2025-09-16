@@ -206,7 +206,7 @@ export default function ChatClient() {
       }
 
       // Remove follow-up markers from the response
-      const followupRegex = /\[FOLLOWUP_1\]\s*(.*?)\s*\[FOLLOWUP_2\]\s*(.*?)$/s
+      const followupRegex = /\[FOLLOWUP_1\]\s*(.*?)\s*\[FOLLOWUP_2\]\s*(.*?)$/
       const cleanResponse = accumulatedText.replace(followupRegex, '').trim()
 
       // Add assistant message

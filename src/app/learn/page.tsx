@@ -1,82 +1,158 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useData, type Chapter, type Category } from '@/contexts/DataContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { createClient } from '@/lib/supabase-browser'
+import { useRouter } from 'next/navigation'
 
 export default function LearnPage() {
-  const { 
-    chapters, 
-    categories, 
-    chaptersLoading, 
+  const {
+    chapters,
+    categories,
+    chaptersLoading,
     categoriesLoading,
     fetchChaptersAndCategories
   } = useData()
-  
+
+  const { user, profile } = useAuth()
+  const supabase = createClient()
+  const router = useRouter()
   const loading = chaptersLoading || categoriesLoading
+
+  // State for dynamic content that causes hydration issues
+  const [greeting, setGreeting] = useState('Welcome!')
+  const [activityMessage, setActivityMessage] = useState('Loading your progress...')
+  const [completedChapterIds, setCompletedChapterIds] = useState<string[]>([])
+  const [progressLoading, setProgressLoading] = useState(true)
 
   useEffect(() => {
     fetchChaptersAndCategories()
   }, [fetchChaptersAndCategories])
 
-  const getPersonalizedGreeting = () => {
-    const hour = new Date().getHours()
-    const name = 'there' // Placeholder name
-    
-    if (hour < 12) {
-      return `Good morning, ${name}!`
-    } else if (hour < 17) {
-      return `Good afternoon, ${name}!`
-    } else {
-      return `Good evening, ${name}!`
+  // Fetch user progress
+  const fetchUserProgress = async () => {
+    try {
+      const response = await fetch('/api/progress', {
+        credentials: 'include',
+      })
+
+      if (response.ok) {
+        const { progress } = await response.json()
+        const chapterIds = progress.map((item: any) => item.chapter_id)
+        setCompletedChapterIds(chapterIds)
+        console.log('Fetched completed chapters:', chapterIds)
+      } else if (response.status === 401) {
+        console.log('User not authenticated')
+        setCompletedChapterIds([])
+      } else {
+        console.error('Failed to fetch progress:', response.statusText)
+        setCompletedChapterIds([])
+      }
+    } catch (error) {
+      console.error('Error fetching progress:', error)
+      setCompletedChapterIds([])
     }
+
+    setProgressLoading(false)
   }
+
+  useEffect(() => {
+    fetchUserProgress()
+  }, [user])
+
+  // Refetch progress when page gains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        fetchUserProgress()
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+
+    // Also listen for visibility change
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        fetchUserProgress()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [user])
+
+  // Only set dynamic content after mount to avoid hydration mismatch
+  useEffect(() => {
+    // Calculate greeting based on time and user
+    const hour = new Date().getHours()
+    // Use real name from profile, fallback to email, then to 'there'
+    const emailPart = user?.email?.split('@')[0]
+    const firstName = profile?.firstName ||
+                      (emailPart ? emailPart.charAt(0).toUpperCase() + emailPart.slice(1) : 'there')
+
+    let newGreeting
+    if (hour < 5) {
+      newGreeting = `Hey ${firstName}, burning the midnight oil?`
+    } else if (hour < 12) {
+      newGreeting = `Good morning, ${firstName}!`
+    } else if (hour < 17) {
+      newGreeting = `Good afternoon, ${firstName}!`
+    } else if (hour < 21) {
+      newGreeting = `Good evening, ${firstName}!`
+    } else {
+      newGreeting = `Hey ${firstName}, working late?`
+    }
+    setGreeting(newGreeting)
+
+    // Set activity message based on real progress
+    const completedChapters = completedChapterIds.length
+    const totalChapters = chapters.length
+
+    let newActivityMessage
+    if (completedChapters === totalChapters && totalChapters > 0) {
+      newActivityMessage = "Congratulations! You've completed all available content."
+    } else if (completedChapters > 0) {
+      newActivityMessage = `You've completed ${completedChapters} out of ${totalChapters} chapters. Keep going!`
+    } else {
+      newActivityMessage = "Welcome to your management training platform. Let's build your leadership skills together."
+    }
+    setActivityMessage(newActivityMessage)
+  }, [user, profile, chapters.length, completedChapterIds])
 
   // Calculate progress stats
   const totalChapters = chapters.length
-  const completedChapters = 0 // Placeholder for now
-  const completedThisWeek = 0 // Placeholder for now
-
-  const getActivityMessage = () => {
-    if (completedThisWeek > 0) {
-      return `You've completed ${completedThisWeek} chapter${completedThisWeek > 1 ? 's' : ''} this week!`
-    } else if (completedChapters > 0) {
-      return "Ready to continue your learning journey?"
-    } else if (completedChapters === totalChapters) {
-      return "Congratulations! You've completed all available content."
-    } else {
-      return "Ready to start building your management skills?"
-    }
-  }
+  const completedChapters = completedChapterIds.length
 
   // Group chapters by category with progress
   const categoriesWithChapters = categories.map((category: Category) => {
     const categoryChapters = chapters
-      .filter((c: Chapter) => c.category_id === category.id)
-      .sort((a: Chapter, b: Chapter) => a.chapter_number - b.chapter_number)
+      .filter((chapter: Chapter) => chapter.category_id === category.id)
+      .sort((a: Chapter, b: Chapter) => a.sort_order - b.sort_order)
 
-    // Separate lessons and book summaries
-    const lessons = categoryChapters.filter((c: Chapter) => c.content_type === 'lesson' || !c.content_type)
-    const bookSummaries = categoryChapters.filter((c: Chapter) => c.content_type === 'book_summary')
-    
+    const completedCount = categoryChapters.filter(ch => completedChapterIds.includes(ch.id)).length
+
     return {
       ...category,
-      lessons,
-      bookSummaries,
       chapters: categoryChapters,
-      progress: 0, // Placeholder
-      total: categoryChapters.length,
+      completedCount,
+      totalCount: categoryChapters.length
     }
-  })
+  }).filter(cat => cat.chapters.length > 0)
 
-  // Mock recent chapters for "Continue Learning"
-  const recentChapters = chapters.slice(0, 2)
+  // Get uncompleted chapters for continue learning section
+  const uncompletedChapters = chapters.filter(ch => !completedChapterIds.includes(ch.id))
+  const recentChapters = uncompletedChapters.slice(0, 2)
 
   if (loading) {
     return (
-      <div className="py-12 md:py-20 px-5 md:px-10">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-b-transparent mx-auto mb-4" style={{borderColor: 'var(--accent-yellow)', borderBottomColor: 'transparent'}}></div>
-          <p style={{color: 'var(--text-secondary)'}}>Loading...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: 'var(--bg-primary)'}}>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4" style={{color: 'var(--text-primary)'}}>Loading your content...</h2>
+          <p style={{color: 'var(--text-secondary)'}}>Setting up your personalized learning experience</p>
         </div>
       </div>
     )
@@ -89,16 +165,20 @@ export default function LearnPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col lg:flex-row gap-8 md:gap-12 items-start">
             <div className="flex-1">
-              <p className="text-lg md:text-xl mb-2" style={{color: 'var(--text-secondary)'}}>{getPersonalizedGreeting()}</p>
-              <h1 className="text-[clamp(32px,5vw,48px)] font-black tracking-tight leading-tight mb-6" style={{color: 'var(--text-primary)'}}>Your Learning Journey</h1>
-              <p className="text-lg max-w-md mb-8" style={{color: 'var(--text-secondary)'}}>
-                {getActivityMessage()}
+              <p className="text-lg md:text-xl mb-2" style={{color: 'var(--text-secondary)'}}>
+                {greeting}
               </p>
-              
+              <h1 className="text-[clamp(32px,5vw,48px)] font-black tracking-tight leading-tight mb-6" style={{color: 'var(--text-primary)'}}>
+                {completedChapters > 0 ? 'Your Learning Journey' : 'Start Your Journey'}
+              </h1>
+              <p className="text-lg max-w-md mb-8" style={{color: 'var(--text-secondary)'}}>
+                {activityMessage}
+              </p>
+
               {/* Quick Actions */}
               <div className="flex flex-wrap gap-3">
-                <button 
-                  onClick={() => window.location.href = chapters.length > 0 ? `/learn/${chapters[0].id}` : '/learn'}
+                <button
+                  onClick={() => window.location.href = uncompletedChapters.length > 0 ? `/learn/${uncompletedChapters[0].id}` : chapters.length > 0 ? `/learn/${chapters[0].id}` : '/learn'}
                   className="hover-lift px-6 py-3 rounded-full font-semibold transition-all duration-300 flex items-center gap-2"
                   style={{backgroundColor: 'var(--accent-blue)', color: 'var(--white)'}}
                 >
@@ -107,8 +187,8 @@ export default function LearnPage() {
                   </svg>
                   {completedChapters > 0 ? 'Continue Learning' : 'Start Learning'}
                 </button>
-                <button 
-                  onClick={() => window.location.href = '/ai-coach'}
+                <button
+                  onClick={() => window.location.href = '/chat'}
                   className="ai-coach-button px-6 py-3 rounded-full font-semibold transition-all duration-300 flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,26 +209,26 @@ export default function LearnPage() {
                   <span>Progress</span>
                   <span>{completedChapters} of {totalChapters}</span>
                 </div>
-                <div className="w-full h-3 bg-gray-200 rounded-full">
-                  <div 
-                    className="h-3 rounded-full transition-all duration-500" 
+                <div className="w-full h-2 rounded-full" style={{backgroundColor: 'var(--border-color)'}}>
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
                     style={{
-                      backgroundColor: 'var(--accent-yellow)',
+                      backgroundColor: 'var(--accent-blue)',
                       width: `${totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0}%`
                     }}
                   ></div>
                 </div>
               </div>
               <p className="text-sm font-medium" style={{color: 'var(--text-secondary)'}}>
-                {chapters.length > 0 ? `Next: ${chapters[0].title}` : 'No chapters available'}
+                {uncompletedChapters.length > 0 ? `Next: ${uncompletedChapters[0].title}` : 'All chapters completed!'}
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Continue Learning Section */}
-      {recentChapters.length > 0 && (
+      {/* Continue Learning Section - Show uncompleted chapters if user has started learning */}
+      {recentChapters.length > 0 && completedChapters > 0 && (
         <section className="py-12 md:py-16 px-5 md:px-10">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-8 md:mb-12">
@@ -186,92 +266,57 @@ export default function LearnPage() {
         </section>
       )}
 
-      {/* Overall Progress Overview */}
-      <section className="py-12 px-5 md:px-10">
+      {/* All Chapters by Category */}
+      <section className="py-12 md:py-16 px-5 md:px-10">
         <div className="max-w-6xl mx-auto">
-          <div className="p-8 md:p-12 rounded-2xl shadow-lg border border-gray-100" style={{backgroundColor: 'var(--white)'}}>
-            <div className="text-center mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4" style={{color: 'var(--text-primary)'}}>
-                Progress Overview
-              </h2>
-              <div className="flex items-center justify-center gap-8 flex-wrap">
-                {categoriesWithChapters.map((category) => {
-                  const percentage = Math.round((category.progress / (category.total || 1)) * 100)
-                  return (
-                    <div key={category.id} className="text-center">
-                      <div className="text-3xl font-black mb-2" style={{color: 'var(--accent-blue)'}}>
-                        {percentage}%
-                      </div>
-                      <div className="text-sm font-semibold" style={{color: 'var(--text-secondary)'}}>
-                        {category.name}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Learning Categories */}
-      <section className="py-12 md:py-20 px-5 md:px-10">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="section-header mb-6" style={{color: 'var(--text-primary)'}}>
-              Explore All Topics
-            </h2>
+          <div className="text-center mb-8 md:mb-12">
+            <h2 className="section-header mb-4" style={{color: 'var(--text-primary)'}}>All Chapters</h2>
             <p className="text-lg max-w-2xl mx-auto" style={{color: 'var(--text-secondary)'}}>
-              Master the essential skills of effective management through curated lessons and insights from top business books.
+              Explore our comprehensive management training curriculum
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {categoriesWithChapters.map((category) => (
-              <div
-                key={category.id}
-                className="hover-lift p-8 md:p-12 rounded-2xl shadow-lg transition-all duration-300 cursor-pointer"
-                style={{backgroundColor: 'var(--white)'}}
-                onClick={() => window.location.href = `/learn/category/${category.id}`}
-              >
-                <div className="mb-6">
-                  <div className="text-4xl font-black mb-4" style={{color: 'var(--accent-yellow)'}}>
-                    {category.sort_order < 10 ? `0${category.sort_order}` : category.sort_order}
-                  </div>
-                  <h3 className="text-2xl font-bold mb-3" style={{color: 'var(--text-primary)'}}>
-                    {category.name}
-                  </h3>
-                  <p className="mb-6" style={{color: 'var(--text-secondary)'}}>
-                    {category.description}
-                  </p>
-                </div>
-                
-                <div className="mb-6">
-                  <div className="text-sm mb-2" style={{color: 'var(--text-secondary)'}}>
-                    Progress: {category.progress} of {category.total} complete
-                  </div>
-                  <div className="w-full h-2 bg-gray-200 rounded-full">
-                    <div 
-                      className="h-2 rounded-full transition-all duration-500" 
-                      style={{
-                        backgroundColor: 'var(--accent-yellow)',
-                        width: `${category.total > 0 ? (category.progress / category.total) * 100 : 0}%`
-                      }}
-                    ></div>
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  {category.lessons.slice(0, 3).map((lesson, index) => (
-                    <div key={lesson.id}>
-                      <span className="text-sm" style={{color: 'var(--text-secondary)'}}>{lesson.title}</span>
-                    </div>
-                  ))}
-                  {category.lessons.length > 3 && (
-                    <div className="text-xs font-medium mt-2" style={{color: 'var(--accent-blue)'}}>
-                      +{category.lessons.length - 3} more chapters
-                    </div>
-                  )}
+          <div className="space-y-6 md:space-y-8">
+            {categoriesWithChapters.map((category) => (
+              <div key={category.id} className="p-6 md:p-8 rounded-2xl shadow-lg" style={{backgroundColor: 'var(--white)'}}>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl md:text-2xl font-bold" style={{color: 'var(--text-primary)'}}>{category.name}</h3>
+                  <span className="text-sm font-medium px-3 py-1 rounded-full" style={{backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)'}}>
+                    {category.completedCount} / {category.totalCount} completed
+                  </span>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+                  {category.chapters.map((chapter: Chapter) => {
+                    const isChapterCompleted = completedChapterIds.includes(chapter.id)
+                    return (
+                      <div
+                        key={chapter.id}
+                        className="p-6 rounded-xl hover-lift transition-all duration-200 cursor-pointer relative"
+                        style={{
+                          backgroundColor: isChapterCompleted ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-primary)',
+                          border: isChapterCompleted ? '2px solid rgba(16, 185, 129, 0.3)' : 'none'
+                        }}
+                        onClick={() => window.location.href = `/learn/${chapter.id}`}
+                      >
+                        {isChapterCompleted && (
+                          <div className="absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center" style={{backgroundColor: '#10b981'}}>
+                            <span className="text-white text-sm font-bold">✓</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="font-semibold mb-2" style={{color: 'var(--text-primary)'}}>{chapter.title}</h4>
+                            <p className="text-sm" style={{color: 'var(--text-secondary)'}}>
+                              {isChapterCompleted ? 'Completed' : 'Ready to explore'}
+                            </p>
+                          </div>
+                          <svg className="w-5 h-5 ml-2" style={{color: isChapterCompleted ? '#10b981' : 'var(--accent-blue)'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             ))}

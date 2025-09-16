@@ -8,6 +8,14 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access not configured' },
+        { status: 500 }
+      )
+    }
+
+    const admin = supabaseAdmin // TypeScript helper - we know it's not null after check above
     const { chapterId, text, voice = 'nova', regenerate = false } = await request.json()
 
     if (!chapterId || !text) {
@@ -19,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     // Check if audio already exists (unless regenerating)
     if (!regenerate) {
-      const { data: chapter } = await supabaseAdmin
+      const { data: chapter } = await admin
         .from('chapters')
         .select('audio_url')
         .eq('id', chapterId)
@@ -53,9 +61,9 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await mp3.arrayBuffer())
     
     // Create storage bucket if it doesn't exist
-    const { data: buckets } = await supabaseAdmin.storage.listBuckets()
+    const { data: buckets } = await admin.storage.listBuckets()
     if (!buckets?.find(b => b.name === 'chapter-audio')) {
-      await supabaseAdmin.storage.createBucket('chapter-audio', {
+      await admin.storage.createBucket('chapter-audio', {
         public: true,
         fileSizeLimit: 52428800, // 50MB
       })
@@ -63,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // Upload to Supabase Storage
     const fileName = `${chapterId}-${Date.now()}.mp3`
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+    const { data: uploadData, error: uploadError } = await admin.storage
       .from('chapter-audio')
       .upload(fileName, buffer, {
         contentType: 'audio/mpeg',
@@ -76,12 +84,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabaseAdmin.storage
+    const { data: { publicUrl } } = admin.storage
       .from('chapter-audio')
       .getPublicUrl(fileName)
 
     // Update chapter with audio URL
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await admin
       .from('chapters')
       .update({ 
         audio_url: publicUrl,
@@ -116,6 +124,14 @@ export async function POST(request: NextRequest) {
 // Delete audio for a chapter
 export async function DELETE(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access not configured' },
+        { status: 500 }
+      )
+    }
+
+    const admin = supabaseAdmin
     const { searchParams } = new URL(request.url)
     const chapterId = searchParams.get('chapterId')
 
@@ -127,7 +143,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get current audio URL
-    const { data: chapter } = await supabaseAdmin
+    const { data: chapter } = await admin
       .from('chapters')
       .select('audio_url')
       .eq('id', chapterId)
@@ -139,13 +155,13 @@ export async function DELETE(request: NextRequest) {
       const fileName = urlParts[urlParts.length - 1]
 
       // Delete from storage
-      await supabaseAdmin.storage
+      await admin.storage
         .from('chapter-audio')
         .remove([fileName])
     }
 
     // Clear audio URL in database
-    await supabaseAdmin
+    await admin
       .from('chapters')
       .update({ 
         audio_url: null,

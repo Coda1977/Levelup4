@@ -10,8 +10,17 @@ marked.setOptions({
 
 export async function POST() {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access not configured' },
+        { status: 500 }
+      )
+    }
+
+    const admin = supabaseAdmin // TypeScript helper
+
     // Fetch all chapters
-    const { data: chapters, error: fetchError } = await supabaseAdmin
+    const { data: chapters, error: fetchError } = await admin
       .from('chapters')
       .select('*')
       .order('created_at', { ascending: true })
@@ -56,7 +65,7 @@ export async function POST() {
           .trim()
 
         // Update the chapter with HTML content
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await admin
           .from('chapters')
           .update({ 
             content: cleanedHtml
@@ -105,7 +114,15 @@ export async function POST() {
 // Get migration status
 export async function GET() {
   try {
-    const { data: chapters, error } = await supabaseAdmin
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access not configured' },
+        { status: 500 }
+      )
+    }
+
+    const admin = supabaseAdmin
+    const { data: chapters, error } = await admin
       .from('chapters')
       .select('id, title, content')
       
