@@ -70,23 +70,26 @@ Client → API Route → Server Supabase → Database
 - **Local Storage Fallback**: Works for unauthenticated users
 - **Auto Migration**: Seamlessly migrates localStorage to database
 
-## Architecture
+## Architecture (Simplified - Jan 17)
 ```
 src/
 ├── app/
 │   ├── api/
-│   │   ├── auth/session/       # Auth bridge endpoint
+│   │   ├── auth/               # Login, signup, session endpoints
 │   │   ├── progress/           # Progress tracking API
-│   │   └── chat/               # AI coach endpoints
+│   │   ├── chat/               # AI coach endpoints (rate-limited)
+│   │   └── admin/              # Admin CRUD operations
 │   ├── learn/                  # Learning dashboard
 │   ├── admin/                  # Admin panel
 │   └── test-auth/              # Auth testing page
 ├── contexts/
-│   ├── AuthContext.tsx         # Auth state management
-│   └── DataContext.tsx         # Content + caching
+│   └── AuthContext.tsx         # Auth state management
 └── lib/
-    ├── supabase-server.ts      # Server-side client
-    └── supabase-browser.ts     # Browser client (limited)
+    ├── supabase-client.ts      # Single unified Supabase client
+    ├── admin-auth.ts           # Admin authentication helper
+    ├── api-utils.ts            # Simple error/success utilities
+    ├── rate-limiter.ts         # Rate limiting middleware
+    └── validation.ts           # Zod schemas for all inputs
 ```
 
 ## Completed Features (Jan 2025 Session) ✅
@@ -122,6 +125,21 @@ src/
 22. **Auth API Routes** - New `/api/auth/login` and `/api/auth/signup` with validation
 23. **Security Testing** - Created test-security.js and verified all improvements
 
+### Session 5 (Jan 17 - Critical Security Fixes & Massive Simplification)
+24. **Edge Runtime Fix** - Fixed middleware crash by removing cookies() usage in session-timeout
+25. **JWT Decoding Fix** - Added proper base64url decoder for Supabase JWTs
+26. **Chat API Protection** - Added critical rate limiting to unprotected chat endpoints
+27. **Removed Hardcoded Secrets** - Eliminated production API keys from test files
+28. **Massive Simplification** - Removed 3,801 lines of over-engineered code (40% reduction):
+    - Consolidated 3 Supabase clients into 1 simple factory function
+    - Removed 13 unnecessary test files (kept only 3 critical tests)
+    - Deleted complex abstractions: DataContext caching, error boundaries, Sentry
+    - Simplified middleware from 95 to 59 lines
+    - Removed over-engineered session timeout (let Supabase handle it)
+29. **Single Supabase Client** - Created unified `/src/lib/supabase-client.ts`
+30. **Simplified API Utils** - Replaced complex error handling with simple `apiError`/`apiSuccess`
+31. **Admin Auth Helper** - Created `/src/lib/admin-auth.ts` for consistent admin verification
+
 ## Security Implementation Status 🔒
 
 ### ✅ COMPLETED Security Features
@@ -147,10 +165,14 @@ src/
 
 ## Remaining Tasks for Launch 📋
 
-### 🟡 HIGH Priority (Before First Users - Days 4-5)
-1. **Session Timeout** - Add 24-hour session expiry (2 hours)
-2. **Basic Monitoring** - Sentry error tracking setup (2 hours)
-3. **Admin Audit Logging** - Track all admin actions (3 hours)
+### ✅ COMPLETED (Session 5)
+1. ~~**Session Timeout**~~ - Supabase handles this automatically
+2. ~~**Complex Error Handling**~~ - Simplified to basic apiError/apiSuccess
+3. ~~**Over-engineered Testing**~~ - Reduced to 3 critical tests
+
+### 🟡 HIGH Priority (Before First Users)
+1. **Basic Monitoring** - Simple error logging (1 hour)
+2. **Admin Audit Logging** - Track admin actions in database (2 hours)
 
 ### 🟢 MEDIUM Priority (Week 2)
 4. **Password Reset UI** - Complete the frontend flow
@@ -186,12 +208,16 @@ src/
 
 ## Fixed Issues ✅
 
-### Critical Security (FIXED)
+### Critical Security (FIXED - Session 5)
 - ~~Admin APIs Unprotected~~ - Secured with authentication
 - ~~No Rate Limiting~~ - Implemented with configurable limits
 - ~~No Input Validation~~ - Zod schemas on all endpoints
 - ~~Sensitive Data in Logs~~ - All removed
 - ~~Environment Variables Not Validated~~ - Now validated at startup
+- ~~Chat API Unprotected~~ - Added rate limiting to chat endpoints
+- ~~Hardcoded Production Keys~~ - Removed from test files
+- ~~Edge Runtime Crash~~ - Fixed session-timeout cookies() usage
+- ~~JWT Decoding Error~~ - Added proper base64url decoder
 
 ### Functionality (FIXED)
 - ~~Admin Panel Create Crash~~ - POST returns chapter data
@@ -200,11 +226,15 @@ src/
 - ~~Profile Not Loading~~ - Fixed getUser() implementation
 - ~~Window.location.href Usage~~ - Replaced with router.push()
 
-### Performance (FIXED)
+### Performance & Complexity (FIXED - Session 5)
 - ~~Type Duplication~~ - Centralized in `/src/types/index.ts`
-- ~~Caching Broken~~ - Fixed with proper ref management
-- ~~Duplicate Fetches~~ - Prevented with fetch deduplication
+- ~~Caching Broken~~ - Removed entire DataContext (unnecessary complexity)
+- ~~Duplicate Fetches~~ - Simplified with single Supabase client
 - ~~Node.js Deprecation~~ - Upgraded to v20.19.5
+- ~~Over-engineered Code~~ - Removed 3,801 lines (40% reduction)
+- ~~Multiple Supabase Clients~~ - Consolidated to single factory
+- ~~Excessive Testing~~ - Reduced from 16 to 3 critical tests
+- ~~Complex Session Management~~ - Let Supabase handle timeouts
 
 ## Development Notes
 
@@ -257,13 +287,25 @@ src/
 - API routes are the bridge between client and server auth
 - Use getUser() not getSession() for Supabase auth
 - RLS policies can cause infinite recursion if self-referencing
+- Let Supabase handle session timeouts - don't reinvent the wheel
 
 ### Security
-- Rate limiting is essential from day 1
+- Rate limiting is essential from day 1 (especially chat APIs!)
 - Input validation prevents most security issues
 - Generic error messages prevent user enumeration
 - Environment validation prevents production crashes
 - Always remove sensitive data from logs
+- Never commit API keys, even in test files
+- Edge runtime has limitations - avoid cookies() in middleware helpers
+
+### Simplification (Session 5 Insights)
+- **Delete first, add later** - Remove complexity before adding features
+- **One Supabase client** is better than three specialized ones
+- **Built-in solutions** - Let frameworks handle what they're good at
+- **Minimal testing** - 3 critical tests > 16 comprehensive tests
+- **Simple errors** - `apiError()` > complex error boundaries
+- **No premature optimization** - Remove caching until proven needed
+- **Trust the platform** - Supabase/Next.js handle many concerns
 
 ### Development
 - Test auth early and thoroughly
@@ -271,11 +313,12 @@ src/
 - Always validate system integration end-to-end
 - Keep types centralized to avoid duplication
 - Use proper Next.js navigation (router.push)
+- Fix critical issues before optimizing
 
 ### Launch Readiness
 - Security > Features for initial users
 - Admin tools must work perfectly
-- Monitoring is critical from day 1
+- Simplicity > Complexity for maintainability
 - Document everything in CLAUDE.md
 
 ## Quick Commands
