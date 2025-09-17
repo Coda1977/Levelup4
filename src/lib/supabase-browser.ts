@@ -1,9 +1,11 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { validateEnv } from './env-validation'
 
 export function createClient() {
+  const env = validateEnv()
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {

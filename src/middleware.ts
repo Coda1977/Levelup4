@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
         last_name: session.user.user_metadata?.last_name || '',
         is_admin: false
       })
-      console.log('Created missing profile for user:', session.user.email)
+      // Created missing profile
     }
   }
 

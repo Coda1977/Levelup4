@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      console.log('User authenticated via callback:', data.user.email)
+      // User authenticated via callback
 
       // Initialize user profile if it doesn't exist (trigger handles auth.users sync)
       try {
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
           if (profileError) {
             console.error('Error creating user profile:', profileError)
           } else {
-            console.log('User profile created for:', data.user.email)
+            // User profile created
           }
         }
       } catch (initError) {

@@ -34,14 +34,14 @@ function LoginForm() {
     setError(null)
     setLoading(true)
 
-    console.log('Auth attempt:', { email, isSignUp })
+    // Auth attempt started
 
     try {
       const { error } = isSignUp
         ? await signUp(email, password, { firstName, lastName })
         : await signIn(email, password)
 
-      console.log('Auth response:', { error, isSignUp })
+      // Auth response received
 
       if (error) {
         console.error('Auth error:', error)
@@ -56,10 +56,11 @@ function LoginForm() {
         setLoading(false)
       } else {
         // Success - redirect to intended destination or learn page
-        console.log('Auth success, redirecting to:', redirectTo)
+        // Auth success, redirecting
         setLoading(false)
-        // Use window.location for a full page refresh to ensure middleware runs
-        window.location.href = redirectTo
+        // Use router.refresh() to ensure middleware runs and then navigate
+        router.refresh()
+        router.push(redirectTo)
       }
     } catch (err) {
       console.error('Unexpected error:', err)

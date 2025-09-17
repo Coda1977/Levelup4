@@ -54,10 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return
         }
 
-        console.log('Initial user check:', {
-          hasUser: !!user,
-          user: user?.email
-        })
+        // Initial user check completed
 
         if (!isUnmounted) {
           setUser(user)
@@ -76,12 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', {
-        event,
-        hasSession: !!session,
-        user: session?.user?.email,
-        timestamp: new Date().toISOString()
-      })
+      // Auth state change handled
 
       if (!isUnmounted) {
         setSession(session)
@@ -122,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (profileError) {
-        console.log('No profile data found for user (this is normal for new users):', profileError.message)
+        // No profile data found (normal for new users)
         setProfile(null)
         setIsAdmin(false)
       } else if (profileData) {
@@ -140,9 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    console.log('Attempting sign in for:', email)
     const { error, data } = await supabase.auth.signInWithPassword({ email, password })
-    console.log('Sign in result:', { error, user: data?.user?.email })
 
     if (!error && data.user) {
       // Force page refresh to ensure cookies are set

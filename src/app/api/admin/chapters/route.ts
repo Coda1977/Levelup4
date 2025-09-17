@@ -71,13 +71,15 @@ export async function POST(request: NextRequest) {
     const admin = supabaseAdmin
     const formData = await request.json()
 
-    const { error } = await admin
+    const { data, error } = await admin
       .from('chapters')
       .insert(formData)
+      .select()
+      .single()
 
     if (error) throw error
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, chapter: data })
   } catch (error) {
     console.error('Error creating chapter:', error)
     return NextResponse.json({ error: 'Failed to create chapter' }, { status: 500 })
@@ -122,6 +124,47 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating chapter:', error)
     return NextResponse.json({ error: 'Failed to update chapter' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    // Verify admin authentication
+    const authResult = await verifyAdminAuth()
+    if (!authResult.isAuthorized) {
+      return authResult.response!
+    }
+
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access not configured' },
+        { status: 500 }
+      )
+    }
+
+    const admin = supabaseAdmin
+    const { chapters } = await request.json()
+
+    // Update sort_order for all chapters
+    const updates = chapters.map((chapter: any, index: number) =>
+      admin
+        .from('chapters')
+        .update({ sort_order: index })
+        .eq('id', chapter.id)
+    )
+
+    const results = await Promise.all(updates)
+
+    // Check if any updates failed
+    const errors = results.filter(r => r.error)
+    if (errors.length > 0) {
+      throw new Error('Failed to update some chapters')
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error reordering chapters:', error)
+    return NextResponse.json({ error: 'Failed to reorder chapters' }, { status: 500 })
   }
 }
 
