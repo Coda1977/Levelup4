@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { SYSTEM_PROMPT } from '@/lib/system-prompt'
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase-client'
 import { withRateLimit } from '@/lib/rate-limiter'
 
 const apiKey = process.env.ANTHROPIC_API_KEY

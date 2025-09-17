@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase-client'
 import { NextResponse } from 'next/server'
 
 // GET /api/chat/messages?conversationId=xxx - Fetch messages for a conversation

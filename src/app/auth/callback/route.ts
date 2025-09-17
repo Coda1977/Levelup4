@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase-client'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -8,8 +8,7 @@ export async function GET(request: Request) {
   const next = searchParams.get('next') ?? '/learn'
 
   if (code) {
-    const response = new NextResponse()
-    const supabase = await createRouteHandlerClient(request, response)
+    const supabase = await createClient()
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 

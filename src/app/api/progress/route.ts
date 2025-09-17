@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase-client'
 import { withRateLimit } from '@/lib/rate-limiter'
 import { markCompleteSchema, validateRequestBody } from '@/lib/validation'
 import { apiSuccess, serverError, validationError, forbiddenError } from '@/lib/api-response'
