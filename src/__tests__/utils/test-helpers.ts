@@ -1,8 +1,19 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://exxildftqhnlupxdlqfn.supabase.co'
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4eGlsZGZ0cWhubHVweGRscWZuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzc2MDgyOCwiZXhwIjoyMDczMzM2ODI4fQ.xXv6Vq5yGUWXdPJLFLL1-oQr18a993uJxJq3Md4NkoM'
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4eGlsZGZ0cWhubHVweGRscWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NjA4MjgsImV4cCI6MjA3MzMzNjgyOH0.iBoiJPeUeEiI6WEkN6j6aLUtLaIHfy2-SlDLZC8f4fE'
+// Use environment variables for test configuration
+// These should be set in your test environment or CI/CD pipeline
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+// Validate that required environment variables are set
+if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+  throw new Error(
+    'Missing required environment variables for tests. ' +
+    'Please set NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and NEXT_PUBLIC_SUPABASE_ANON_KEY ' +
+    'in your .env.test.local file or test environment.'
+  )
+}
 
 // Admin client using service role to bypass RLS for admin operations
 // Use this for setup, teardown, and operations that need full access

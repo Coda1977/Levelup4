@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { SYSTEM_PROMPT } from '@/lib/system-prompt'
 import { createClient } from '@/lib/supabase-server'
+import { withRateLimit } from '@/lib/rate-limiter'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
@@ -88,7 +89,7 @@ function selectRelevantChapters(query: string, chapters: any[], limit: number = 
     .filter(ch => ch.relevanceScore > 0)
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -284,4 +285,4 @@ ${chapterContext}`
     console.error('Chat API error:', error)
     return new Response('Failed to process chat request', { status: 500 })
   }
-}
+}, 'api') // Using 'api' rate limiter (30 requests per minute)

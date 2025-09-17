@@ -53,11 +53,22 @@ export async function middleware(request: NextRequest) {
 
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
 
-  // Check session timeout for protected routes
+  // Check session timeout for protected routes using the Edge-compatible client
   if (isProtectedRoute && session) {
-    const sessionCheck = await checkSessionTimeout(request)
+    const sessionCheck = await checkSessionTimeout(session, supabase)
     if (!sessionCheck.isValid) {
-      return createSessionTimeoutResponse(request, sessionCheck.reason!)
+      // Handle session refresh if needed
+      if (sessionCheck.reason === 'needs_refresh') {
+        const { data: { session: newSession } } = await supabase.auth.refreshSession()
+        if (!newSession) {
+          return createSessionTimeoutResponse(request, 'refresh_failed')
+        }
+        // Continue with refreshed session
+      } else if (sessionCheck.reason === 'session_timeout' || sessionCheck.reason === 'jwt_expired') {
+        // Sign out and redirect
+        await supabase.auth.signOut()
+        return createSessionTimeoutResponse(request, sessionCheck.reason)
+      }
     }
   }
 

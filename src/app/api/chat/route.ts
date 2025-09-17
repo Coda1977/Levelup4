@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { SYSTEM_PROMPT } from '@/lib/system-prompt'
+import { withRateLimit } from '@/lib/rate-limiter'
 
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
@@ -87,7 +88,7 @@ function selectRelevantChapters(query: string, chapters: any[], limit: number = 
     .filter(ch => ch.relevanceScore > 0)
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     const body: ChatRequest = await request.json()
     const { message, chapters = [], completedChapters = [], previousMessages = [] } = body
@@ -202,4 +203,4 @@ ${chapterContext}`
       { status: 500 }
     )
   }
-}
+}, 'api') // Using 'api' rate limiter (30 requests per minute)
