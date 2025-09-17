@@ -36,9 +36,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<any>(null)
 
   useEffect(() => {
+    let isUnmounted = false
+
+    // Initialize Supabase client
+    const initializeClient = async () => {
+      const client = await createClient()
+      if (!isUnmounted) {
+        setSupabase(client)
+      }
+    }
+    initializeClient()
+
+    return () => {
+      isUnmounted = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!supabase) return
+
     let isUnmounted = false
 
     // Get initial session
@@ -96,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isUnmounted = true
       subscription.unsubscribe()
     }
-  }, [router])
+  }, [router, supabase])
 
   const checkAdminStatus = async (userId?: string) => {
     if (!userId) {
@@ -132,6 +151,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) return { error: new Error('Auth not initialized') }
+
     const { error, data } = await supabase.auth.signInWithPassword({ email, password })
 
     if (!error && data.user) {
@@ -143,6 +164,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, profile?: { firstName: string; lastName: string }) => {
+    if (!supabase) return { error: new Error('Auth not initialized') }
+
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
@@ -165,11 +188,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    if (!supabase) return
+
     await supabase.auth.signOut()
     router.push('/')
   }
 
   const resetPassword = async (email: string) => {
+    if (!supabase) return { error: new Error('Auth not initialized') }
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/reset-password`
     })
