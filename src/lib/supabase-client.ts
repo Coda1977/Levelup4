@@ -3,7 +3,6 @@
 
 import { createServerClient as createSSRClient } from '@supabase/ssr'
 import { createBrowserClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -16,6 +15,8 @@ export async function createClient() {
   }
 
   // Server environment - handle cookies
+  // Dynamic import to avoid issues in client components
+  const { cookies } = await import('next/headers')
   const cookieStore = await cookies()
 
   return createSSRClient(supabaseUrl, supabaseAnonKey, {
