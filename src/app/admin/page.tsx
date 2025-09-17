@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { AdminErrorBoundary } from '@/components/ErrorBoundary'
 
 // Dynamically import the client component to avoid SSR issues with drag-and-drop
 const AdminPanelClient = dynamic(() => import('./AdminPanelClient'), {
@@ -15,5 +16,9 @@ const AdminPanelClient = dynamic(() => import('./AdminPanelClient'), {
 })
 
 export default function AdminPanel() {
-  return <AdminPanelClient />
+  return (
+    <AdminErrorBoundary>
+      <AdminPanelClient />
+    </AdminErrorBoundary>
+  )
 }

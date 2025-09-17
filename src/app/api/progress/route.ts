@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase-server'
 import { withRateLimit } from '@/lib/rate-limiter'
 import { markCompleteSchema, validateRequestBody } from '@/lib/validation'
 import { apiSuccess, serverError, validationError, forbiddenError } from '@/lib/api-response'
+import { captureException } from '@/lib/sentry'
 
 export const GET = withRateLimit(async (request: NextRequest) => {
   try {
@@ -25,6 +26,9 @@ export const GET = withRateLimit(async (request: NextRequest) => {
 
     return apiSuccess({ progress: progress || [] })
   } catch (error) {
+    captureException(error as Error, {
+      tags: { endpoint: 'GET /api/progress' }
+    })
     return serverError(error as Error)
   }
 }, 'api')

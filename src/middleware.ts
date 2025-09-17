@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { checkSessionTimeout, createSessionTimeoutResponse } from '@/lib/session-timeout'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -24,13 +25,6 @@ export async function middleware(request: NextRequest) {
 
   // This will refresh session if expired - required for Server Components
   const { data: { session } } = await supabase.auth.getSession()
-
-  console.log('Middleware check:', {
-    path: request.nextUrl.pathname,
-    hasSession: !!session,
-    user: session?.user?.email,
-    cookies: request.cookies.getAll().map(c => c.name)
-  })
 
   // Ensure user profile exists if authenticated (trigger handles initial creation, this is a safety net)
   if (session?.user) {
@@ -58,6 +52,14 @@ export async function middleware(request: NextRequest) {
                           request.nextUrl.pathname.startsWith('/admin')
 
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+
+  // Check session timeout for protected routes
+  if (isProtectedRoute && session) {
+    const sessionCheck = await checkSessionTimeout(request)
+    if (!sessionCheck.isValid) {
+      return createSessionTimeoutResponse(request, sessionCheck.reason!)
+    }
+  }
 
   // Redirect to login if accessing protected route without session
   if (isProtectedRoute && !session) {

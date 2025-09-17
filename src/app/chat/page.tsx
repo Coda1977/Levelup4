@@ -1,5 +1,10 @@
+import { ChatErrorBoundary } from '@/components/ErrorBoundary'
 import ChatClientWithDB from './ChatClientWithDB'
 
 export default function ChatPage() {
-  return <ChatClientWithDB />
+  return (
+    <ChatErrorBoundary>
+      <ChatClientWithDB />
+    </ChatErrorBoundary>
+  )
 }
