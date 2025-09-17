@@ -1,15 +1,16 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase-client'
 import { withRateLimit } from '@/lib/rate-limiter'
 import { loginSchema, validateRequestBody } from '@/lib/validation'
-import { apiSuccess, authError, serverError, validationError } from '@/lib/api-response'
+import { apiError, apiSuccess } from '@/lib/api-utils'
+import { NextResponse } from 'next/server'
 
 export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     // Validate request body
     const { data, error } = await validateRequestBody(request, loginSchema)
     if (error) {
-      return validationError(error)
+      return apiError(error, 400)
     }
 
     const { email, password } = data!
@@ -23,7 +24,7 @@ export const POST = withRateLimit(async (request: NextRequest) => {
 
     if (authError || !authData.user) {
       // Generic error message for security
-      return authError()
+      return apiError('Invalid credentials', 401)
     }
 
     // Fetch user profile
@@ -33,16 +34,18 @@ export const POST = withRateLimit(async (request: NextRequest) => {
       .eq('id', authData.user.id)
       .single()
 
-    return apiSuccess({
+    return NextResponse.json({
       user: {
         id: authData.user.id,
         email: authData.user.email,
         firstName: profile?.first_name,
         lastName: profile?.last_name,
         isAdmin: profile?.is_admin || false
-      }
-    }, 'Login successful')
+      },
+      message: 'Login successful'
+    })
   } catch (error) {
-    return serverError(error as Error)
+    console.error('Login error:', error)
+    return apiError('An error occurred', 500)
   }
 }, 'auth')

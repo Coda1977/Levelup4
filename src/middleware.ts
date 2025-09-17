@@ -1,12 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { checkSessionTimeout, createSessionTimeoutResponse } from '@/lib/session-timeout'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,60 +14,21 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
-  // This will refresh session if expired - required for Server Components
+  // Just check if user is authenticated - Supabase handles session expiry
   const { data: { session } } = await supabase.auth.getSession()
 
-  // Ensure user profile exists if authenticated (trigger handles initial creation, this is a safety net)
-  if (session?.user) {
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('id', session.user.id)
-      .single()
-
-    if (!profile) {
-      // Create profile if missing (should be rare due to trigger)
-      await supabase.from('user_profiles').insert({
-        id: session.user.id,
-        first_name: session.user.user_metadata?.first_name || '',
-        last_name: session.user.user_metadata?.last_name || '',
-        is_admin: false
-      })
-      // Created missing profile
-    }
-  }
-
-  // Protected routes
-  const isProtectedRoute = request.nextUrl.pathname.startsWith('/learn') ||
-                          request.nextUrl.pathname.startsWith('/chat') ||
-                          request.nextUrl.pathname.startsWith('/admin')
-
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
-
-  // Check session timeout for protected routes using the Edge-compatible client
-  if (isProtectedRoute && session) {
-    const sessionCheck = await checkSessionTimeout(session, supabase)
-    if (!sessionCheck.isValid) {
-      // Handle session refresh if needed
-      if (sessionCheck.reason === 'needs_refresh') {
-        const { data: { session: newSession } } = await supabase.auth.refreshSession()
-        if (!newSession) {
-          return createSessionTimeoutResponse(request, 'refresh_failed')
-        }
-        // Continue with refreshed session
-      } else if (sessionCheck.reason === 'session_timeout' || sessionCheck.reason === 'jwt_expired') {
-        // Sign out and redirect
-        await supabase.auth.signOut()
-        return createSessionTimeoutResponse(request, sessionCheck.reason)
-      }
-    }
-  }
+  const isProtectedRoute =
+    request.nextUrl.pathname.startsWith('/learn') ||
+    request.nextUrl.pathname.startsWith('/chat') ||
+    request.nextUrl.pathname.startsWith('/admin')
 
   // Redirect to login if accessing protected route without session
   if (isProtectedRoute && !session) {
@@ -80,8 +38,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Check admin privileges for admin routes
-  if (isAdminRoute && session) {
+  // Check admin access
+  if (request.nextUrl.pathname.startsWith('/admin') && session) {
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('is_admin')
@@ -89,10 +47,7 @@ export async function middleware(request: NextRequest) {
       .single()
 
     if (!profile?.is_admin) {
-      const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/learn'
-      redirectUrl.searchParams.set('error', 'admin_required')
-      return NextResponse.redirect(redirectUrl)
+      return NextResponse.redirect(new URL('/learn', request.url))
     }
   }
 
@@ -100,9 +55,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/learn/:path*',
-    '/chat/:path*',
-    '/admin/:path*'
-  ]
+  matcher: ['/learn/:path*', '/chat/:path*', '/admin/:path*']
 }

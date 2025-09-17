@@ -1,15 +1,16 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase-client'
 import { withRateLimit } from '@/lib/rate-limiter'
 import { signupSchema, validateRequestBody } from '@/lib/validation'
-import { apiSuccess, authError, serverError, validationError } from '@/lib/api-response'
+import { apiError } from '@/lib/api-utils'
+import { NextResponse } from 'next/server'
 
 export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     // Validate request body
     const { data, error } = await validateRequestBody(request, signupSchema)
     if (error) {
-      return validationError(error)
+      return apiError(error, 400)
     }
 
     const { email, password, firstName, lastName } = data!
@@ -30,9 +31,9 @@ export const POST = withRateLimit(async (request: NextRequest) => {
     if (signupError || !authData.user) {
       // Check for specific errors
       if (signupError?.message?.includes('already registered')) {
-        return validationError('Email already registered')
+        return apiError('Email already registered', 400)
       }
-      return authError()
+      return apiError('Invalid signup information', 400)
     }
 
     // Create user profile
@@ -50,16 +51,18 @@ export const POST = withRateLimit(async (request: NextRequest) => {
       // Don't fail signup if profile creation fails
     }
 
-    return apiSuccess({
+    return NextResponse.json({
       user: {
         id: authData.user.id,
         email: authData.user.email,
         firstName,
         lastName
       },
-      requiresEmailVerification: true
-    }, 'Signup successful. Please check your email to verify your account.')
+      requiresEmailVerification: true,
+      message: 'Signup successful. Please check your email to verify your account.'
+    })
   } catch (error) {
-    return serverError(error as Error)
+    console.error('Signup error:', error)
+    return apiError('An error occurred', 500)
   }
 }, 'auth')
