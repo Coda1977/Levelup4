@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import ChapterAudioPlayer from '@/components/ChapterAudioPlayer'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClient } from '@/lib/supabase-browser'
+import { createClient } from '@/lib/supabase-client'
 
 type Category = {
   id: string

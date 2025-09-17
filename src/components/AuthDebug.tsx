@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { createClient } from '@/lib/supabase-browser'
+import { createClient } from '@/lib/supabase-client'
 import { useState, useEffect } from 'react'
 
 export default function AuthDebug() {

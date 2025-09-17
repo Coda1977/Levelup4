@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useData, type Chapter, type Category } from '@/contexts/DataContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClient } from '@/lib/supabase-browser'
+import { createClient } from '@/lib/supabase-client'
 import { useRouter } from 'next/navigation'
 
 export default function LearnPage() {
