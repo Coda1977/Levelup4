@@ -176,6 +176,25 @@ export default function AdminPanelClient() {
     }
   }
 
+  // Block access for non-admin users
+  if (!authLoading && !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: 'var(--bg-primary)'}}>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4" style={{color: 'var(--text-primary)'}}>Access Denied</h2>
+          <p style={{color: 'var(--text-secondary)'}}>Admin privileges required to access this page.</p>
+          <button
+            onClick={() => router.push('/learn')}
+            className="mt-6 px-6 py-3 rounded-full font-semibold transition-all duration-300"
+            style={{backgroundColor: 'var(--accent-blue)', color: 'var(--white)'}}
+          >
+            Return to Learning
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { marked } from 'marked'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
 // Configure marked for clean HTML output
 marked.setOptions({
@@ -10,6 +11,12 @@ marked.setOptions({
 
 export async function POST() {
   try {
+    // Verify admin authentication
+    const authResult = await verifyAdminAuth()
+    if (!authResult.isAuthorized) {
+      return authResult.response!
+    }
+
     if (!supabaseAdmin) {
       return NextResponse.json(
         { error: 'Admin access not configured' },
@@ -114,6 +121,12 @@ export async function POST() {
 // Get migration status
 export async function GET() {
   try {
+    // Verify admin authentication
+    const authResult = await verifyAdminAuth()
+    if (!authResult.isAuthorized) {
+      return authResult.response!
+    }
+
     if (!supabaseAdmin) {
       return NextResponse.json(
         { error: 'Admin access not configured' },

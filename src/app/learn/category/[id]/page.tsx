@@ -1,35 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
-
-type Category = {
-  id: string
-  name: string
-  description: string
-  sort_order: number
-}
-
-type Chapter = {
-  id: string
-  category_id: string
-  title: string
-  content: string
-  preview: string
-  sort_order: number
-  chapter_number: number
-  content_type: string
-  reading_time: number | null
-  podcast_title: string | null
-  podcast_url: string | null
-  video_title: string | null
-  video_url: string | null
-  try_this_week: string | null
-  categories?: Category
-}
+import { useParams, useRouter } from 'next/navigation'
+import { Category, Chapter } from '@/types'
 
 export default function CategoryPage() {
   const params = useParams()
+  const router = useRouter()
   const [category, setCategory] = useState<Category | null>(null)
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,7 +22,7 @@ export default function CategoryPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/admin/chapters')
+      const response = await fetch('/api/chapters')
       const data = await response.json()
       
       if (!response.ok) {
@@ -195,7 +172,7 @@ export default function CategoryPage() {
                       key={chapter.id}
                       className="hover-lift p-6 rounded-xl border border-gray-100 cursor-pointer transition-all duration-300"
                       style={{backgroundColor: 'var(--bg-primary)'}}
-                      onClick={() => window.location.href = `/learn/${chapter.id}`}
+                      onClick={() => router.push(`/learn/${chapter.id}`)}
                       onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0px)'}
                     >
@@ -233,7 +210,7 @@ export default function CategoryPage() {
                       key={book.id}
                       className="hover-lift p-6 rounded-xl border border-gray-100 cursor-pointer transition-all duration-300"
                       style={{backgroundColor: 'var(--bg-primary)'}}
-                      onClick={() => window.location.href = `/learn/${book.id}`}
+                      onClick={() => router.push(`/learn/${book.id}`)}
                       onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0px)'}
                     >

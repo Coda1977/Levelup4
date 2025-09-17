@@ -159,8 +159,23 @@ export default function Navigation() {
                   </Link>
                 )}
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="px-3 py-2 text-sm text-gray-600">
-                    {user.email}
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-sm"
+                      style={{
+                        backgroundColor: 'var(--accent-blue)',
+                        fontFamily: 'var(--font-heading)'
+                      }}
+                    >
+                      {profile?.firstName && profile?.lastName
+                        ? `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase()
+                        : user.email?.split('@')[0].slice(0, 2).toUpperCase() || 'U'}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {profile?.firstName && profile?.lastName
+                        ? `${profile.firstName} ${profile.lastName}`
+                        : user.email?.split('@')[0] || 'User'}
+                    </div>
                   </div>
                   <button
                     onClick={() => {

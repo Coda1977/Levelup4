@@ -44,26 +44,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const { data: { user }, error } = await supabase.auth.getUser()
 
         if (error) {
-          console.error('Error getting initial session:', error)
+          console.error('Error getting initial user:', error)
           if (!isUnmounted) {
             setIsLoading(false)
           }
           return
         }
 
-        console.log('Initial session check:', {
-          hasSession: !!session,
-          user: session?.user?.email,
-          cookies: document.cookie
+        console.log('Initial user check:', {
+          hasUser: !!user,
+          user: user?.email
         })
 
         if (!isUnmounted) {
-          setSession(session)
-          setUser(session?.user ?? null)
-          await checkAdminStatus(session?.user?.id)
+          setUser(user)
+          await checkAdminStatus(user?.id)
           setIsLoading(false)
         }
       } catch (error) {

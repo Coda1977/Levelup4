@@ -178,7 +178,7 @@ export default function LearnPage() {
               {/* Quick Actions */}
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => window.location.href = uncompletedChapters.length > 0 ? `/learn/${uncompletedChapters[0].id}` : chapters.length > 0 ? `/learn/${chapters[0].id}` : '/learn'}
+                  onClick={() => router.push(uncompletedChapters.length > 0 ? `/learn/${uncompletedChapters[0].id}` : chapters.length > 0 ? `/learn/${chapters[0].id}` : '/learn')}
                   className="hover-lift px-6 py-3 rounded-full font-semibold transition-all duration-300 flex items-center gap-2"
                   style={{backgroundColor: 'var(--accent-blue)', color: 'var(--white)'}}
                 >
@@ -188,7 +188,7 @@ export default function LearnPage() {
                   {completedChapters > 0 ? 'Continue Learning' : 'Start Learning'}
                 </button>
                 <button
-                  onClick={() => window.location.href = '/chat'}
+                  onClick={() => router.push('/chat')}
                   className="ai-coach-button px-6 py-3 rounded-full font-semibold transition-all duration-300 flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,44 +227,6 @@ export default function LearnPage() {
         </div>
       </section>
 
-      {/* Continue Learning Section - Show uncompleted chapters if user has started learning */}
-      {recentChapters.length > 0 && completedChapters > 0 && (
-        <section className="py-12 md:py-16 px-5 md:px-10">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-8 md:mb-12">
-              <h2 className="section-header mb-4" style={{color: 'var(--text-primary)'}}>Continue Your Journey</h2>
-              <p className="text-lg max-w-2xl mx-auto" style={{color: 'var(--text-secondary)'}}>
-                Pick up where you left off
-              </p>
-            </div>
-            <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-12">
-              {recentChapters.map((chapter: Chapter) => (
-                <div
-                  key={chapter.id}
-                  className="hover-lift p-8 rounded-2xl shadow-lg transition-all duration-300 cursor-pointer"
-                  style={{backgroundColor: 'var(--white)'}}
-                  onClick={() => window.location.href = `/learn/${chapter.id}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold mb-2">{chapter.title}</h3>
-                      <p className="text-sm mb-3" style={{color: 'var(--text-secondary)'}}>
-                        {categories.find((c: Category) => c.id === chapter.category_id)?.name}
-                      </p>
-                      <p className="text-sm" style={{color: 'var(--text-secondary)'}}>
-                        Pick up where you left off in this management essential
-                      </p>
-                    </div>
-                    <div className="px-4 py-2 rounded-full text-sm font-semibold ml-4" style={{backgroundColor: 'var(--accent-yellow)'}}>
-                      Continue
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* All Chapters by Category */}
       <section className="py-12 md:py-16 px-5 md:px-10">
@@ -296,7 +258,7 @@ export default function LearnPage() {
                           backgroundColor: isChapterCompleted ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-primary)',
                           border: isChapterCompleted ? '2px solid rgba(16, 185, 129, 0.3)' : 'none'
                         }}
-                        onClick={() => window.location.href = `/learn/${chapter.id}`}
+                        onClick={() => router.push(`/learn/${chapter.id}`)}
                       >
                         {isChapterCompleted && (
                           <div className="absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center" style={{backgroundColor: '#10b981'}}>

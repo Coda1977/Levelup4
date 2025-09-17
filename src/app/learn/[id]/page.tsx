@@ -68,7 +68,7 @@ export default function ChapterPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/admin/chapters')
+      const response = await fetch('/api/chapters')
       const data = await response.json()
       
       if (!response.ok) {

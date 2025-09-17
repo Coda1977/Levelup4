@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 function useScrollFadeIn(): [React.RefObject<HTMLDivElement | null>, boolean] {
   const ref = useRef<HTMLDivElement>(null);
@@ -24,6 +25,7 @@ export default function Home() {
   const [heroRef, heroVisible] = useScrollFadeIn();
   const [featuresRef, featuresVisible] = useScrollFadeIn();
   const [designRef, designVisible] = useScrollFadeIn();
+  const router = useRouter();
 
   return (
     <div style={{backgroundColor: 'var(--bg-primary)'}}>
@@ -45,7 +47,7 @@ export default function Home() {
                 Transforming Insight<br />into Action
               </h1>
               <button
-                onClick={() => window.location.href = "/learn"}
+                onClick={() => router.push("/learn")}
                 className="hover-lift px-10 py-4 rounded-full font-semibold text-lg transition-all duration-300"
                 style={{backgroundColor: 'var(--accent-blue)', color: 'var(--bg-primary)'}}
               >

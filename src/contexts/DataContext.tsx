@@ -1,39 +1,7 @@
 'use client'
 
-import { createContext, useContext, useReducer, useCallback, ReactNode } from 'react'
-
-export type Category = {
-  id: string
-  name: string
-  description: string
-  sort_order: number
-}
-
-export type Chapter = {
-  id: string
-  category_id: string
-  title: string
-  content: string
-  preview: string
-  sort_order: number
-  content_type: string
-  chapter_number: number
-  reading_time: number | null
-  podcast_title: string | null
-  podcast_url: string | null
-  video_title: string | null
-  video_url: string | null
-  try_this_week: string | null
-  author: string | null
-  description: string | null
-  key_takeaways: string[] | null
-  podcast_header: string | null
-  video_header: string | null
-  audio_url?: string | null
-  audio_voice?: string | null
-  audio_generated_at?: string | null
-  categories?: Category
-}
+import { createContext, useContext, useReducer, useCallback, ReactNode, useRef } from 'react'
+import { Category, Chapter } from '@/types'
 
 type CacheEntry<T> = {
   data: T
@@ -60,7 +28,7 @@ type DataAction =
   | { type: 'INVALIDATE_CACHE'; payload?: string }
 
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-const API_BASE = '/api/admin/chapters'
+const API_BASE = '/api/chapters'
 
 const initialState: DataState = {
   chapters: { data: [], timestamp: 0, loading: false, error: null },
@@ -262,11 +230,21 @@ const DataContext = createContext<DataContextType | null>(null)
 export function DataProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(dataReducer, initialState)
 
+  // Use ref to track if fetch is in progress to prevent duplicate requests
+  const fetchingRef = useRef(false)
+
   const fetchChaptersAndCategories = useCallback(async () => {
     // Check if we have valid cached data
     if (isCacheValid(state.chapters) && isCacheValid(state.categories)) {
       return
     }
+
+    // Prevent duplicate fetches
+    if (fetchingRef.current) {
+      return
+    }
+
+    fetchingRef.current = true
 
     try {
       dispatch({ type: 'SET_LOADING', payload: { key: 'chapters', loading: true } })
@@ -290,8 +268,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch data'
       dispatch({ type: 'SET_ERROR', payload: { key: 'chapters', error: errorMessage } })
       dispatch({ type: 'SET_ERROR', payload: { key: 'categories', error: errorMessage } })
+    } finally {
+      fetchingRef.current = false
     }
-  }, [])
+  }, [state.chapters, state.categories])
+
+  const fetchingChaptersRef = useRef(new Set<string>())
 
   const fetchChapter = useCallback(async (id: string): Promise<Chapter | null> => {
     // Check individual chapter cache first
@@ -306,6 +288,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_INDIVIDUAL_CHAPTER', payload: { id, chapter: existingChapter } })
       return existingChapter
     }
+
+    // Prevent duplicate fetches for the same chapter
+    if (fetchingChaptersRef.current.has(id)) {
+      // Wait a bit and check cache again
+      await new Promise(resolve => setTimeout(resolve, 100))
+      const cached = state.individualChapters[id]
+      return cached?.data || null
+    }
+
+    fetchingChaptersRef.current.add(id)
 
     try {
       dispatch({ type: 'SET_LOADING', payload: { key: id, loading: true } })
@@ -326,8 +318,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch chapter'
       dispatch({ type: 'SET_ERROR', payload: { key: id, error: errorMessage } })
       return null
+    } finally {
+      fetchingChaptersRef.current.delete(id)
     }
-  }, [])
+  }, [state.individualChapters, state.chapters])
 
   const updateChapter = useCallback((chapter: Chapter) => {
     dispatch({ type: 'UPDATE_CHAPTER', payload: chapter })

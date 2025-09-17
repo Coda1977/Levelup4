@@ -57,12 +57,30 @@ export async function middleware(request: NextRequest) {
                           request.nextUrl.pathname.startsWith('/chat') ||
                           request.nextUrl.pathname.startsWith('/admin')
 
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+
   // Redirect to login if accessing protected route without session
   if (isProtectedRoute && !session) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/auth/login'
     redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
     return NextResponse.redirect(redirectUrl)
+  }
+
+  // Check admin privileges for admin routes
+  if (isAdminRoute && session) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('is_admin')
+      .eq('id', session.user.id)
+      .single()
+
+    if (!profile?.is_admin) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/learn'
+      redirectUrl.searchParams.set('error', 'admin_required')
+      return NextResponse.redirect(redirectUrl)
+    }
   }
 
   return supabaseResponse

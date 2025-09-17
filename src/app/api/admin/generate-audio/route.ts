@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { supabaseAdmin } from '@/lib/supabase'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -8,6 +9,12 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const authResult = await verifyAdminAuth()
+    if (!authResult.isAuthorized) {
+      return authResult.response!
+    }
+
     if (!supabaseAdmin) {
       return NextResponse.json(
         { error: 'Admin access not configured' },
@@ -124,6 +131,12 @@ export async function POST(request: NextRequest) {
 // Delete audio for a chapter
 export async function DELETE(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const authResult = await verifyAdminAuth()
+    if (!authResult.isAuthorized) {
+      return authResult.response!
+    }
+
     if (!supabaseAdmin) {
       return NextResponse.json(
         { error: 'Admin access not configured' },
