@@ -2,8 +2,7 @@ import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase-client'
 import { withRateLimit } from '@/lib/rate-limiter'
 import { markCompleteSchema, validateRequestBody } from '@/lib/validation'
-import { apiSuccess, serverError, validationError, forbiddenError } from '@/lib/api-response'
-import { captureException } from '@/lib/sentry'
+import { apiError, apiSuccess } from '@/lib/api-utils'
 
 export const GET = withRateLimit(async (request: NextRequest) => {
   try {
@@ -13,7 +12,7 @@ export const GET = withRateLimit(async (request: NextRequest) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      return forbiddenError()
+      return apiError('Unauthorized', 403)
     }
 
     // Get user progress
@@ -26,10 +25,8 @@ export const GET = withRateLimit(async (request: NextRequest) => {
 
     return apiSuccess({ progress: progress || [] })
   } catch (error) {
-    captureException(error as Error, {
-      tags: { endpoint: 'GET /api/progress' }
-    })
-    return serverError(error as Error)
+    console.error('Progress API error:', error)
+    return apiError('Failed to fetch progress', 500, request, error)
   }
 }, 'api')
 
@@ -41,13 +38,13 @@ export const POST = withRateLimit(async (request: NextRequest) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      return forbiddenError()
+      return apiError('Unauthorized', 403)
     }
 
     // Validate request body
     const { data: validatedData, error: validationErr } = await validateRequestBody(request, markCompleteSchema)
     if (validationErr) {
-      return validationError(validationErr)
+      return apiError(validationErr, 400)
     }
 
     const { chapterId } = validatedData!
@@ -64,9 +61,10 @@ export const POST = withRateLimit(async (request: NextRequest) => {
 
     if (error) throw error
 
-    return apiSuccess(null, 'Chapter marked as complete')
+    return apiSuccess({ message: 'Chapter marked as complete' })
   } catch (error) {
-    return serverError(error as Error)
+    console.error('Progress POST error:', error)
+    return apiError('Failed to update progress', 500, request, error)
   }
 }, 'api')
 
@@ -78,7 +76,7 @@ export const DELETE = withRateLimit(async (request: NextRequest) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      return forbiddenError()
+      return apiError('Unauthorized', 403)
     }
 
     // Clear all progress
@@ -89,8 +87,9 @@ export const DELETE = withRateLimit(async (request: NextRequest) => {
 
     if (error) throw error
 
-    return apiSuccess(null, 'Progress cleared')
+    return apiSuccess({ message: 'Progress cleared' })
   } catch (error) {
-    return serverError(error as Error)
+    console.error('Progress DELETE error:', error)
+    return apiError('Failed to clear progress', 500, request, error)
   }
 }, 'api')

@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { verifyAdminAuth } from '@/lib/admin-auth'
 import { withRateLimit } from '@/lib/rate-limiter'
 import { createChapterSchema, updateChapterSchema, reorderChaptersSchema, validateRequestBody } from '@/lib/validation'
-import { apiSuccess, serverError, validationError } from '@/lib/api-response'
+import { apiError, apiSuccess } from '@/lib/api-utils'
 
 export const GET = withRateLimit(async () => {
   try {
@@ -14,7 +14,7 @@ export const GET = withRateLimit(async () => {
     }
 
     if (!supabaseAdmin) {
-      return serverError(new Error('Admin access not configured'))
+      return apiError('Admin access not configured', 500)
     }
 
     const admin = supabaseAdmin
@@ -48,7 +48,7 @@ export const GET = withRateLimit(async () => {
       chapters: chapters || []
     })
   } catch (error) {
-    return serverError(error as Error)
+    return apiError('Server error', 500)
   }
 }, 'admin')
 
@@ -61,7 +61,7 @@ export const POST = withRateLimit(async (request: NextRequest) => {
     }
 
     if (!supabaseAdmin) {
-      return serverError(new Error('Admin access not configured'))
+      return apiError('Admin access not configured', 500)
     }
 
     const admin = supabaseAdmin
@@ -69,7 +69,7 @@ export const POST = withRateLimit(async (request: NextRequest) => {
     // Validate request body
     const { data: formData, error: validationErr } = await validateRequestBody(request, createChapterSchema)
     if (validationErr) {
-      return validationError(validationErr)
+      return apiError(validationErr, 400)
     }
 
     const { data, error } = await admin
@@ -82,7 +82,7 @@ export const POST = withRateLimit(async (request: NextRequest) => {
 
     return apiSuccess({ chapter: data }, 'Chapter created successfully')
   } catch (error) {
-    return serverError(error as Error)
+    return apiError('Server error', 500)
   }
 }, 'admin')
 
@@ -95,7 +95,7 @@ export const PUT = withRateLimit(async (request: NextRequest) => {
     }
 
     if (!supabaseAdmin) {
-      return serverError(new Error('Admin access not configured'))
+      return apiError('Admin access not configured', 500)
     }
 
     const admin = supabaseAdmin
@@ -103,7 +103,7 @@ export const PUT = withRateLimit(async (request: NextRequest) => {
     // Validate request body
     const { data: validatedData, error: validationErr } = await validateRequestBody(request, updateChapterSchema)
     if (validationErr) {
-      return validationError(validationErr)
+      return apiError(validationErr, 400)
     }
 
     const { id, ...updates } = validatedData!
@@ -117,7 +117,7 @@ export const PUT = withRateLimit(async (request: NextRequest) => {
 
     return apiSuccess(null, 'Chapter updated successfully')
   } catch (error) {
-    return serverError(error as Error)
+    return apiError('Server error', 500)
   }
 }, 'admin')
 
@@ -130,7 +130,7 @@ export const PATCH = withRateLimit(async (request: NextRequest) => {
     }
 
     if (!supabaseAdmin) {
-      return serverError(new Error('Admin access not configured'))
+      return apiError('Admin access not configured', 500)
     }
 
     const admin = supabaseAdmin
@@ -138,7 +138,7 @@ export const PATCH = withRateLimit(async (request: NextRequest) => {
     // Validate request body
     const { data: validatedData, error: validationErr } = await validateRequestBody(request, reorderChaptersSchema)
     if (validationErr) {
-      return validationError(validationErr)
+      return apiError(validationErr, 400)
     }
 
     const { chapters } = validatedData!
@@ -161,7 +161,7 @@ export const PATCH = withRateLimit(async (request: NextRequest) => {
 
     return apiSuccess(null, 'Chapters reordered successfully')
   } catch (error) {
-    return serverError(error as Error)
+    return apiError('Server error', 500)
   }
 }, 'admin')
 
@@ -174,7 +174,7 @@ export const DELETE = withRateLimit(async (request: NextRequest) => {
     }
 
     if (!supabaseAdmin) {
-      return serverError(new Error('Admin access not configured'))
+      return apiError('Admin access not configured', 500)
     }
 
     const admin = supabaseAdmin
@@ -182,7 +182,7 @@ export const DELETE = withRateLimit(async (request: NextRequest) => {
     const id = searchParams.get('id')
 
     if (!id) {
-      return validationError('Chapter ID is required')
+      return apiError('Chapter ID is required', 400)
     }
 
     const { error } = await admin
@@ -194,6 +194,6 @@ export const DELETE = withRateLimit(async (request: NextRequest) => {
 
     return apiSuccess(null, 'Chapter deleted successfully')
   } catch (error) {
-    return serverError(error as Error)
+    return apiError('Server error', 500)
   }
 }, 'admin')
