@@ -6,6 +6,7 @@ import ChapterList from '@/components/admin/ChapterList'
 import { useData, type Chapter, type Category } from '@/contexts/DataContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function AdminPanelClient() {
   const {
@@ -245,14 +246,26 @@ export default function AdminPanelClient() {
           <button
             onClick={exportData}
             className="px-6 py-2 rounded-full font-medium transition-all duration-300 hover:scale-105 border-2"
-            style={{ 
-              borderColor: 'var(--accent-blue)', 
+            style={{
+              borderColor: 'var(--accent-blue)',
               color: 'var(--accent-blue)',
               backgroundColor: 'transparent'
             }}
           >
             Export Data
           </button>
+          <Link
+            href="/admin/errors"
+            className="px-6 py-2 rounded-full font-medium transition-all duration-300 hover:scale-105 border-2 text-center"
+            style={{
+              borderColor: 'var(--accent-yellow)',
+              color: 'var(--accent-yellow)',
+              backgroundColor: 'transparent',
+              textDecoration: 'none'
+            }}
+          >
+            Error Monitoring
+          </Link>
         </div>
 
         {/* Chapter Form */}

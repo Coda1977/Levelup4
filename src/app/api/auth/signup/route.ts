@@ -10,7 +10,7 @@ export const POST = withRateLimit(async (request: NextRequest) => {
     // Validate request body
     const { data, error } = await validateRequestBody(request, signupSchema)
     if (error) {
-      return apiError(error, 400)
+      return apiError(error, 400, request)
     }
 
     const { email, password, firstName, lastName } = data!
@@ -31,9 +31,9 @@ export const POST = withRateLimit(async (request: NextRequest) => {
     if (signupError || !authData.user) {
       // Check for specific errors
       if (signupError?.message?.includes('already registered')) {
-        return apiError('Email already registered', 400)
+        return apiError('Email already registered', 400, request)
       }
-      return apiError('Invalid signup information', 400)
+      return apiError('Invalid signup information', 400, request)
     }
 
     // Create user profile
@@ -63,6 +63,6 @@ export const POST = withRateLimit(async (request: NextRequest) => {
     })
   } catch (error) {
     console.error('Signup error:', error)
-    return apiError('An error occurred', 500)
+    return apiError('An error occurred', 500, request, error)
   }
 }, 'auth')

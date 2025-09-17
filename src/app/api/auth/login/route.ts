@@ -10,7 +10,7 @@ export const POST = withRateLimit(async (request: NextRequest) => {
     // Validate request body
     const { data, error } = await validateRequestBody(request, loginSchema)
     if (error) {
-      return apiError(error, 400)
+      return apiError(error, 400, request)
     }
 
     const { email, password } = data!
@@ -24,7 +24,7 @@ export const POST = withRateLimit(async (request: NextRequest) => {
 
     if (authError || !authData.user) {
       // Generic error message for security
-      return apiError('Invalid credentials', 401)
+      return apiError('Invalid credentials', 401, request)
     }
 
     // Fetch user profile
@@ -46,6 +46,6 @@ export const POST = withRateLimit(async (request: NextRequest) => {
     })
   } catch (error) {
     console.error('Login error:', error)
-    return apiError('An error occurred', 500)
+    return apiError('An error occurred', 500, request, error)
   }
 }, 'auth')

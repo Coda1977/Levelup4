@@ -198,6 +198,11 @@ ${chapterContext}`
 
   } catch (error) {
     console.error('Chat API error:', error)
+
+    // Log to database for monitoring
+    const { logApiError } = await import('@/lib/error-logger')
+    await logApiError(request, error, 'Chat API failed', 500)
+
     return NextResponse.json(
       { error: 'Failed to process chat request' },
       { status: 500 }
