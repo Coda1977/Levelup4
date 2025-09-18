@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useLayoutEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ChapterAudioPlayer from '@/components/ChapterAudioPlayer'
@@ -65,12 +65,6 @@ export default function ChapterPage() {
       }
     }
 
-    // Log scroll behavior with Link components
-    console.log('🔗 Chapter loaded:', params.id, 'scroll position:', window.scrollY)
-
-    setTimeout(() => {
-      console.log('🔗 After 500ms:', window.scrollY)
-    }, 500)
   }, [params.id, user])
 
   const loadChapter = async (id: string) => {
