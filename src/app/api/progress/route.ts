@@ -55,7 +55,6 @@ export const POST = withRateLimit(async (request: NextRequest) => {
       .upsert({
         user_id: user.id,
         chapter_id: chapterId,
-        completed: true,
         completed_at: new Date().toISOString()
       })
 

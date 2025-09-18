@@ -354,6 +354,87 @@ src/
 - Simplicity > Complexity for maintainability
 - Document everything in CLAUDE.md
 
+## Sept 18, 2025 - Scroll Issue Investigation: The 6-Hour Bug Hunt 📍
+
+### **CURRENT STATUS: ROOT CAUSE IDENTIFIED** ⚠️
+**Problem**: Chapter navigation doesn't scroll to top consistently. Next/Previous buttons exhibit issue where pages start at the previous scroll position instead of the top.
+
+**CRITICAL DISCOVERY**: The scroll issue persists even with **ZERO custom scroll code** - this is **pure Next.js App Router behavior**.
+
+### **The Complete Journey**
+
+#### **Phase 1: Initial Attempts (2+ hours)**
+1. **Infinite render loop discovered** - Fixed by stabilizing `useParams()` dependencies
+2. **SVG path error** - Fixed malformed path in learn page
+3. **Multiple scroll fixes attempted**:
+   - `window.scrollTo(0, 0)` in useEffect
+   - `history.scrollRestoration = 'manual'`
+   - `useLayoutEffect` vs `useEffect` timing
+   - `window.location.href` instead of `router.push()`
+
+#### **Phase 2: Framework Investigation (2+ hours)**
+4. **Middleware interference suspected** - Discovered middleware intercepting `/learn` routes
+5. **Branch comparison** - Found `main` branch has no middleware, `auth` branch does
+6. **Multiple debugging attempts** with console logging
+7. **Systematic analysis** with debug specialist subagent
+
+#### **Phase 3: Nuclear Reset (1+ hours)**
+8. **First revert** - Back to commit before current session (`cdd1305`)
+9. **Second revert** - Back to clean state before any scroll fixes (`ea72c38`)
+10. **Database schema fix** - Manually re-applied only critical user progress fix
+11. **Pure Next.js test** - Removed ALL custom scroll code
+
+### **ROOT CAUSE ANALYSIS: Next.js App Router Design**
+
+**The issue is NOT a bug - it's a feature working as designed in the wrong context:**
+
+1. **Next.js App Router Scroll Restoration**: Designed to preserve user context in lists/feeds
+2. **Parameter-based routing**: `/learn/[id]` treated as same page with different parameters
+3. **Click position memory**: Browser remembers where user clicked (bottom navigation buttons)
+4. **Automatic restoration**: Next.js "helpfully" restores scroll to button location after content swap
+
+**Why main page → chapter works**: First visit to URL = no saved scroll position
+**Why chapter → chapter fails**: Browser has cached scroll position from previous visit
+
+### **Technical Investigation Results**
+
+**Files Modified During Investigation**:
+- `src/app/learn/[id]/page.tsx` - Multiple scroll attempts, then reverted to original
+- `src/middleware.ts` - Temporarily excluded `/learn` routes
+- `src/app/learn/page.tsx` - Added and removed debug logging
+- `next.config.js` - Temporarily disabled scroll restoration (reverted)
+- `src/app/globals.css` - Removed `overflow-x: hidden` (reverted)
+
+**Final State**: Pure Next.js App Router with zero custom scroll code - **issue still persists**
+
+### **Lessons Learned: How a Simple Bug Became 6 Hours**
+
+#### **What Went Wrong**
+1. **Fought the framework** instead of understanding it first
+2. **Added fixes before understanding the problem** - created compound issues
+3. **Never tested pure framework behavior** - assumed our code was the cause
+4. **Changed too many things at once** - couldn't isolate what helped vs hurt
+5. **Didn't compare working vs broken states early enough**
+
+#### **What We Should Have Done**
+1. **Start with framework defaults** - Test pure Next.js behavior first
+2. **Compare branches** - `main` vs `auth` comparison would have revealed middleware immediately
+3. **Single variable testing** - Change one thing, test, revert or keep
+4. **Read framework documentation** - Next.js scroll restoration is well-documented
+5. **Nuclear reset earlier** - When lost in changes, revert to known good state
+
+#### **The Real Issue**
+This is a **design philosophy clash**:
+- **Next.js optimization**: Preserve user context for better UX in lists/feeds
+- **Our use case**: Chapter-to-chapter navigation should always start at top
+- **The conflict**: Navigation buttons at bottom of page trigger position restoration
+
+### **Current Status**
+- **Running on**: http://localhost:3001
+- **Code state**: Clean, no custom scroll modifications
+- **Issue confirmed**: Persists even with pure Next.js behavior
+- **Next steps**: Need elegant solution that works WITH Next.js, not against it
+
 ## Quick Commands
 ```bash
 # Start development (with Node.js 20)

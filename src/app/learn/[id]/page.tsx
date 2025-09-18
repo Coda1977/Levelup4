@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useLayoutEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import ChapterAudioPlayer from '@/components/ChapterAudioPlayer'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { useAuth } from '@/contexts/AuthContext'
@@ -55,6 +56,7 @@ export default function ChapterPage() {
   const [isCompleted, setIsCompleted] = useState(false)
   const [completingChapter, setCompletingChapter] = useState(false)
 
+
   useEffect(() => {
     if (params.id) {
       loadChapter(params.id as string)
@@ -62,6 +64,13 @@ export default function ChapterPage() {
         checkChapterCompletion(params.id as string)
       }
     }
+
+    // Log scroll behavior with Link components
+    console.log('🔗 Chapter loaded:', params.id, 'scroll position:', window.scrollY)
+
+    setTimeout(() => {
+      console.log('🔗 After 500ms:', window.scrollY)
+    }, 500)
   }, [params.id, user])
 
   const loadChapter = async (id: string) => {
@@ -793,34 +802,34 @@ export default function ChapterPage() {
                 return (
                   <>
                     {prevChapter && (
-                      <button
-                        onClick={() => router.push(`/learn/${prevChapter.id}`)}
+                      <Link
+                        href={`/learn/${prevChapter.id}`}
                         className="px-6 py-3 rounded-full font-semibold transition-all duration-300 hover-lift inline-flex items-center gap-2"
                         style={{backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', border: '2px solid var(--border-color)'}}
                       >
                         <span>←</span>
                         <span>Previous Chapter</span>
-                      </button>
+                      </Link>
                     )}
 
-                    <button
-                      onClick={() => router.push('/learn')}
+                    <Link
+                      href="/learn"
                       className="px-6 py-3 rounded-full font-semibold transition-all duration-300 hover-lift inline-flex items-center gap-2"
                       style={{backgroundColor: 'var(--accent-yellow)', color: 'var(--text-primary)'}}
                     >
                       <span>📚</span>
                       <span>All Chapters</span>
-                    </button>
+                    </Link>
 
                     {nextChapter && (
-                      <button
-                        onClick={() => router.push(`/learn/${nextChapter.id}`)}
+                      <Link
+                        href={`/learn/${nextChapter.id}`}
                         className="px-6 py-3 rounded-full font-bold transition-all duration-300 hover-lift inline-flex items-center gap-2"
                         style={{backgroundColor: 'var(--accent-blue)', color: 'var(--white)'}}
                       >
                         <span>Next Chapter</span>
                         <span>→</span>
-                      </button>
+                      </Link>
                     )}
                   </>
                 )
