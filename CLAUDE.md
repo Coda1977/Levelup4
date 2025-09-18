@@ -456,3 +456,177 @@ git push origin auth     # Push auth branch to GitHub
 # Admin: http://localhost:3000/admin (requires admin account)
 # Learn: http://localhost:3000/learn
 ```
+
+## Sept 18, 2025 - Chapter Navigation Scroll Issue: The 6-Hour Investigation 🔍
+
+### **CURRENT STATUS: ROOT CAUSE UNKNOWN** ⚠️
+**Problem**: Chapter navigation doesn't scroll to top consistently. Next/Previous buttons start at previous scroll position instead of top.
+
+### **Key Evidence Collected**
+
+#### **✅ What Works**
+- **Direct URL navigation** (typing in browser address bar) → always starts at top
+- **First visit** to any chapter → starts at top
+- **Page refresh** → starts at top
+
+#### **❌ What Fails**
+- **All client-side navigation methods** → scroll down to previous position
+- **All button/link navigation** → same scroll accumulation pattern
+
+#### **🔍 Patterns Discovered**
+- **ALL navigations start at 98.4px** (navigation button area)
+- **Automatic scroll down occurs after 500ms**
+- **Scroll positions accumulate**: 480px → 2832px → 3293px → 3453px
+- **Consistent target elements**: UL/P elements in chapter content at 2800-3300px
+
+### **COMPLETE LIST OF ATTEMPTED SOLUTIONS** ❌
+
+#### **1. Scroll Control Methods**
+```javascript
+// ❌ Manual scroll to top
+window.scrollTo(0, 0)
+
+// ❌ History scroll restoration
+history.scrollRestoration = 'manual'
+
+// ❌ Global scroll restoration in next.config.js
+module.exports = { experimental: { scrollRestoration: false } }
+
+// ❌ Next.js 15 scroll option
+router.push(url, { scroll: false })
+```
+
+#### **2. Timing Solutions**
+```javascript
+// ❌ useEffect timing
+useEffect(() => { window.scrollTo(0, 0) }, [params.id])
+
+// ❌ useLayoutEffect (before paint)
+useLayoutEffect(() => { window.scrollTo(0, 0) }, [params.id])
+
+// ❌ setTimeout delays
+setTimeout(() => window.scrollTo(0, 0), 100)
+setTimeout(() => window.scrollTo(0, 0), 200)
+setTimeout(() => window.scrollTo(0, 0), 500)
+
+// ❌ Multiple checkpoint overrides
+[100, 200, 500].forEach(delay => setTimeout(() => window.scrollTo(0, 0), delay))
+```
+
+#### **3. Navigation Method Changes**
+```javascript
+// ❌ router.push() (original)
+onClick={() => router.push(`/learn/${id}`)}
+
+// ❌ Link components
+<Link href={`/learn/${id}`}>Next Chapter</Link>
+
+// ❌ window.location.href
+onClick={() => window.location.href = `/learn/${id}`}
+```
+
+#### **4. History Manipulation**
+```javascript
+// ❌ Replace state to break scroll memory
+window.history.replaceState({}, '', window.location.pathname)
+
+// ❌ Push new state
+window.history.pushState({}, '', url)
+```
+
+#### **5. Focus Management**
+```javascript
+// ❌ Remove tabIndex
+// Removed tabIndex={-1} from Next Chapter button
+
+// ❌ Prevent focus
+onClick={(e) => { e.preventDefault(); navigate(); }}
+
+// ❌ Blur active element
+document.activeElement?.blur()
+```
+
+#### **6. Content Analysis**
+- ✅ **Checked chapter HTML content**: 0 links, 0 IDs found
+- ✅ **Analyzed sanitizeHtml()**: No problematic elements created
+- ✅ **Verified no contentEditable elements**
+- ✅ **Confirmed no anchor tags in content**
+
+#### **7. Framework-Level Attempts**
+```javascript
+// ❌ Override browser scroll restoration
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual'
+}
+
+// ❌ Disable smooth scrolling
+document.documentElement.style.scrollBehavior = 'auto'
+
+// ❌ CSS overflow modifications
+html { overflow-x: hidden; } // tested and reverted
+```
+
+#### **8. Debug & Investigation Methods**
+```javascript
+// ✅ Element detection at scroll position
+const element = document.elementFromPoint(window.innerWidth / 2, 100)
+
+// ✅ Focusable element scanning
+document.querySelectorAll('a, button, input, textarea, select, [tabindex]')
+
+// ✅ Scroll event monitoring with timing
+window.addEventListener('scroll', () => console.log(window.scrollY))
+
+// ✅ PopState event monitoring
+window.addEventListener('popstate', listener)
+```
+
+### **Technical Investigation Results**
+
+#### **Scroll Pattern Evidence**
+```javascript
+// Identical behavior for ALL client-side navigation:
+🔗 Chapter loaded: bf7a8d87... scroll position: 98.4
+🔗 After 500ms: 320
+
+🔗 Chapter loaded: 330f850e... scroll position: 98.4
+🔗 After 500ms: 2679.199951171875
+
+🔗 Chapter loaded: 39ca4bf1... scroll position: 98.4
+🔗 After 500ms: 2832.800048828125
+```
+
+#### **Target Elements Identified**
+```
+🎯 TARGET ELEMENT at 3613px: UL (content: "Send follow-up emails within 2 hours...")
+🎯 TARGET ELEMENT at 3856px: P (content: "Find someone who's excellent at something...")
+```
+
+### **What We Know For Certain**
+1. **Issue is specific to client-side navigation** (router.push, Link, etc.)
+2. **Server-side navigation works perfectly** (direct URL, refresh)
+3. **Next.js App Router treats `/learn/[id]` as persistent page** with parameter changes
+4. **Scroll restoration happens AFTER our attempts** (around 500ms delay)
+5. **No content elements causing the issue** (0 links, 0 IDs, 0 anchors)
+6. **Issue persists with pure Next.js** (no custom scroll code)
+
+### **Current Theories**
+1. **Next.js App Router Design**: Parameter routing preserves scroll context by design
+2. **Client-Side Hydration**: Something during React hydration restores scroll
+3. **Framework-Level Scroll Memory**: Next.js internal scroll restoration system
+4. **Route Transition Behavior**: App Router maintaining "reading position" across parameter changes
+
+### **Files Modified During Investigation**
+- `src/app/learn/[id]/page.tsx` - Multiple attempts, now has Link components + minimal logging
+- `src/middleware.ts` - Temporarily excluded `/learn` routes (reverted)
+- `next.config.js` - Temporarily disabled scroll restoration (reverted)
+- `src/app/globals.css` - Temporarily modified overflow (reverted)
+
+### **Next Steps to Consider**
+- Test `window.location.href` vs Link components
+- Check if other dynamic routes `[id]` have same behavior
+- Investigate Next.js App Router scroll configuration options
+- Test with `replace: true` option in router.push()
+- Consider if this is expected Next.js behavior requiring workaround
+
+### **Status**: Investigation ongoing - multiple solutions attempted, root cause still unknown
