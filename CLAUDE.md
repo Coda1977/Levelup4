@@ -629,4 +629,37 @@ window.addEventListener('popstate', listener)
 - Test with `replace: true` option in router.push()
 - Consider if this is expected Next.js behavior requiring workaround
 
-### **Status**: Investigation ongoing - multiple solutions attempted, root cause still unknown
+## **LATEST ATTEMPT: Force Dynamic Layout (Sept 18, 2025)** ❌
+
+### **Attempt #21: Next.js force-dynamic Configuration**
+**Theory**: Next.js App Router caches rendered pages, preserving scroll positions. Force dynamic rendering to break this cache.
+
+**Implementation**:
+```javascript
+// src/app/learn/[id]/layout.tsx
+export const dynamic = 'force-dynamic'
+export default function ChapterLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
+}
+```
+
+**Expected Result**: Each chapter navigation triggers server-side rendering, eliminating cached DOM with scroll positions.
+
+**Actual Result**: ❌ **FAILED** - Scroll issue persists even with forced server-side rendering.
+
+**Significance**: This proves the issue is NOT related to Next.js caching or client-side DOM reuse. The problem exists at a deeper level - possibly browser-level scroll restoration or focus management that happens AFTER server rendering.
+
+### **Critical Insight**
+After 21+ attempts covering:
+- Manual scroll control
+- Framework-level configuration
+- Navigation method changes
+- History manipulation
+- Focus management
+- Content analysis
+- Timing solutions
+- Server-side rendering (force-dynamic)
+
+**The issue persists regardless of approach**. This suggests we're dealing with fundamental browser behavior that's extremely difficult to override in Next.js App Router with parameter-based routing.
+
+### **Status**: Investigation ongoing - **FORCE-DYNAMIC FAILED** - need radical new approach
