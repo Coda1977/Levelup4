@@ -65,10 +65,10 @@ export async function checkRateLimit(
 
 // Helper function to apply rate limiting to API routes
 export function withRateLimit(
-  handler: (request: NextRequest) => Promise<NextResponse>,
+  handler: (request: NextRequest) => Promise<NextResponse | Response>,
   type: 'auth' | 'api' | 'admin' = 'api'
 ) {
-  return async (request: NextRequest): Promise<NextResponse> => {
+  return async (request: NextRequest): Promise<NextResponse | Response> => {
     const rateLimitResult = await checkRateLimit(request, type)
 
     if (!rateLimitResult.success) {

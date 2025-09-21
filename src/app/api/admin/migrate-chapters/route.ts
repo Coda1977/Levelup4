@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase-client'
 import { marked } from 'marked'
 import { verifyAdminAuth } from '@/lib/admin-auth'
 
@@ -17,14 +17,7 @@ export async function POST() {
       return authResult.response!
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: 'Admin access not configured' },
-        { status: 500 }
-      )
-    }
-
-    const admin = supabaseAdmin // TypeScript helper
+    const admin = createAdminClient()
 
     // Fetch all chapters
     const { data: chapters, error: fetchError } = await admin
@@ -127,14 +120,7 @@ export async function GET() {
       return authResult.response!
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: 'Admin access not configured' },
-        { status: 500 }
-      )
-    }
-
-    const admin = supabaseAdmin
+    const admin = createAdminClient()
     const { data: chapters, error } = await admin
       .from('chapters')
       .select('id, title, content')

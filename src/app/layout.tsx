@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google'
 import Navigation from '@/components/Navigation'
 import { DataProvider } from '@/contexts/DataContext'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -21,16 +20,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className} suppressHydrationWarning={true}>
-        <ErrorBoundary>
-          <AuthProvider>
+        <AuthProvider>
             <DataProvider>
               <Navigation />
               <main className="min-h-screen" style={{backgroundColor: 'var(--bg-primary)'}}>
                 {children}
               </main>
             </DataProvider>
-          </AuthProvider>
-        </ErrorBoundary>
+        </AuthProvider>
       </body>
     </html>
   )

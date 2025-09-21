@@ -95,8 +95,8 @@ export default function ChatClient() {
       id: generateId(),
       title: 'New Conversation',
       messages: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
     setActiveConversation(newConversation)
     if (isMobile) setShowSidebar(false)
@@ -112,7 +112,7 @@ export default function ChatClient() {
       id: generateId(),
       role: 'user',
       content: textToSend,
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     }
 
     // Create or update conversation
@@ -122,14 +122,14 @@ export default function ChatClient() {
         id: generateId(),
         title: generateConversationTitle(textToSend),
         messages: [],
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
     }
 
     // Add user message
     conversation.messages.push(userMessage)
-    conversation.updatedAt = new Date()
+    conversation.updatedAt = new Date().toISOString()
 
     // Update title if it's the first message
     if (conversation.messages.length === 1) {
@@ -214,12 +214,12 @@ export default function ChatClient() {
         id: generateId(),
         role: 'assistant',
         content: cleanResponse,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         followups: followups
       }
 
       conversation.messages.push(assistantMessage)
-      conversation.updatedAt = new Date()
+      conversation.updatedAt = new Date().toISOString()
 
       // Save conversation
       saveConversation(conversation)
@@ -264,12 +264,12 @@ export default function ChatClient() {
             id: generateId(),
             role: 'assistant',
             content: data.response,
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
             followups: data.followups
           }
 
           conversation.messages.push(assistantMessage)
-          conversation.updatedAt = new Date()
+          conversation.updatedAt = new Date().toISOString()
 
           // Save conversation
           saveConversation(conversation)
@@ -297,7 +297,7 @@ export default function ChatClient() {
         id: generateId(),
         role: 'assistant',
         content: `Sorry, I couldn't process your message. ${error instanceof Error ? error.message : 'Please try again.'}`,
-        timestamp: new Date()
+        timestamp: new Date().toISOString()
       }
       conversation.messages.push(errorMessage)
       setActiveConversation({ ...conversation })

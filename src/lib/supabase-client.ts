@@ -7,10 +7,18 @@ import { createBrowserClient } from '@supabase/ssr'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+// Browser client (for client components)
+export function createBrowserClientInstance() {
+  if (typeof window === 'undefined') {
+    throw new Error('createBrowserClientInstance should only be called in browser environment')
+  }
+  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+}
+
 // Server-side client (for API routes and server components)
 export async function createClient() {
   if (typeof window !== 'undefined') {
-    // Browser environment - simple client
+    // Browser environment - use simple browser client
     return createBrowserClient(supabaseUrl, supabaseAnonKey)
   }
 

@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
         // Create messages for this conversation
         if (conv.messages && Array.isArray(conv.messages)) {
-          const messages = conv.messages.map(msg => ({
+          const messages = conv.messages.map((msg: any) => ({
             conversation_id: newConv.id,
             role: msg.role,
             content: msg.content,

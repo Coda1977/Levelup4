@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "code-review": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@vibesnipe/code-review-mcp"
+      ],
+      "env": {}
+    }
+  }
+}

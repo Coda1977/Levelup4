@@ -23,19 +23,10 @@ export function getUserSession(): LocalUserSession {
   if (stored) {
     try {
       const session = JSON.parse(stored)
-      // Convert date strings back to Date objects
-      session.conversations = session.conversations.map((conv: any) => ({
-        ...conv,
-        createdAt: new Date(conv.createdAt),
-        updatedAt: new Date(conv.updatedAt),
-        messages: conv.messages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))
-      }))
+      // Keep dates as strings for consistency
       return session
     } catch (e) {
-      console.error('Failed to parse session:', e)
+      // Invalid stored data, return fresh session
     }
   }
 

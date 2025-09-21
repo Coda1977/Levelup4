@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useData, type Chapter, type Category } from '@/contexts/DataContext'
+import { useData } from '@/contexts/DataContext'
+import { Chapter, Category } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase-client'
 import { useRouter } from 'next/navigation'

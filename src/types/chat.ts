@@ -2,7 +2,7 @@ export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
-  timestamp: Date
+  timestamp: string
   followups?: string[]
 }
 
@@ -10,8 +10,8 @@ export interface Conversation {
   id: string
   title: string
   messages: Message[]
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
 
 export interface LocalUserSession {

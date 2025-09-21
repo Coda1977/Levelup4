@@ -80,8 +80,8 @@ export default function ChatClientWithDB() {
       const localConversations = session.conversations.map(conv => ({
         id: conv.id,
         title: conv.title,
-        created_at: conv.createdAt.toString(),
-        updated_at: conv.updatedAt.toString(),
+        created_at: conv.createdAt,
+        updated_at: conv.updatedAt,
         message_count: conv.messages.length
       }))
       setConversations(localConversations)
@@ -97,7 +97,7 @@ export default function ChatClientWithDB() {
         setConversations(data.conversations)
       }
     } catch (error) {
-      console.error('Error loading conversations:', error)
+      // Error loading conversations
     }
   }
 
@@ -120,7 +120,7 @@ export default function ChatClientWithDB() {
         setMessages(data.messages)
       }
     } catch (error) {
-      console.error('Error loading messages:', error)
+      // Error loading messages
     }
   }
 
@@ -151,7 +151,7 @@ export default function ChatClientWithDB() {
           loadConversations()
         }
       } catch (error) {
-        console.error('Migration failed:', error)
+        // Migration failed
       }
     }
   }
@@ -214,7 +214,7 @@ export default function ChatClientWithDB() {
         setMessages([])
       }
     } catch (error) {
-      console.error('Error creating conversation:', error)
+      // Error creating conversation
     }
   }
 
@@ -236,8 +236,8 @@ export default function ChatClientWithDB() {
       const localConversations = session.conversations.map(conv => ({
         id: conv.id,
         title: conv.title,
-        created_at: conv.createdAt.toString(),
-        updated_at: conv.updatedAt.toString(),
+        created_at: conv.createdAt,
+        updated_at: conv.updatedAt,
         message_count: conv.messages.length
       }))
       setConversations(localConversations)
@@ -263,7 +263,7 @@ export default function ChatClientWithDB() {
         }
       }
     } catch (error) {
-      console.error('Error deleting conversation:', error)
+      // Error deleting conversation
     }
   }
 
@@ -373,7 +373,7 @@ export default function ChatClientWithDB() {
                 if (json.conversationId && !conversationId) {
                   conversationId = json.conversationId
                   // Update active conversation with new ID
-                  setActiveConversation(prev => prev ? { ...prev, id: conversationId } : null)
+                  setActiveConversation(prev => prev ? { ...prev, id: json.conversationId } : null)
                 }
               } catch (e) {
                 // Not JSON, skip
@@ -383,7 +383,7 @@ export default function ChatClientWithDB() {
         }
       }
     } catch (error) {
-      console.error('Error sending message:', error)
+      // Error sending message
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: 'Sorry, I encountered an error while processing your message. Please try again.',

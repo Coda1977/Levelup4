@@ -1,8 +1,8 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User, Session } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase-client'
+import { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
+import { createBrowserClientInstance } from '@/lib/supabase-client'
 import { useRouter } from 'next/navigation'
 
 type AuthContextType = {
@@ -39,19 +39,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabase, setSupabase] = useState<any>(null)
 
   useEffect(() => {
-    let isUnmounted = false
-
-    // Initialize Supabase client
-    const initializeClient = async () => {
-      const client = await createClient()
-      if (!isUnmounted) {
-        setSupabase(client)
-      }
+    // Only initialize client after component mounts (browser environment)
+    if (typeof window === 'undefined') {
+      return
     }
-    initializeClient()
 
-    return () => {
-      isUnmounted = true
+    try {
+      const client = createBrowserClientInstance()
+      setSupabase(client)
+    } catch (error) {
+      setIsLoading(false)
+      return
     }
   }, [])
 
@@ -66,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { user }, error } = await supabase.auth.getUser()
 
         if (error) {
-          console.error('Error getting initial user:', error)
           if (!isUnmounted) {
             setIsLoading(false)
           }
@@ -81,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsLoading(false)
         }
       } catch (error) {
-        console.error('Error in getInitialSession:', error)
         if (!isUnmounted) {
           setIsLoading(false)
         }
@@ -91,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getInitialSession()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       // Auth state change handled
 
       if (!isUnmounted) {
@@ -118,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router, supabase])
 
   const checkAdminStatus = async (userId?: string) => {
-    if (!userId) {
+    if (!userId || !supabase) {
       setIsAdmin(false)
       setProfile(null)
       return
@@ -144,7 +140,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsAdmin(profileData.is_admin || false)
       }
     } catch (error) {
-      console.error('Error checking admin status:', error)
       setIsAdmin(false)
       setProfile(null)
     }

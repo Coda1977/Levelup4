@@ -128,20 +128,26 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Message ID is required' }, { status: 400 })
   }
 
-  // Delete the message (only if it belongs to user's conversation)
+  // Verify the message belongs to the user before deleting
+  // Using a JOIN through conversation ownership
+  const { data: message } = await supabase
+    .from('messages')
+    .select('id, conversation_id, conversations!inner(user_id)')
+    .eq('id', id)
+    .eq('conversations.user_id', user.id)
+    .single()
+
+  if (!message) {
+    return NextResponse.json({ error: 'Message not found or unauthorized' }, { status: 404 })
+  }
+
+  // Now delete the message
   const { error } = await supabase
     .from('messages')
     .delete()
     .eq('id', id)
-    .in('conversation_id',
-      supabase
-        .from('conversations')
-        .select('id')
-        .eq('user_id', user.id)
-    )
 
   if (error) {
-    console.error('Error deleting message:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

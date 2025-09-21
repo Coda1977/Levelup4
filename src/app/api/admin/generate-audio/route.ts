@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase-client'
 import { verifyAdminAuth } from '@/lib/admin-auth'
 
 const openai = new OpenAI({
@@ -15,14 +15,7 @@ export async function POST(request: NextRequest) {
       return authResult.response!
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: 'Admin access not configured' },
-        { status: 500 }
-      )
-    }
-
-    const admin = supabaseAdmin // TypeScript helper - we know it's not null after check above
+    const admin = createAdminClient()
     const { chapterId, text, voice = 'nova', regenerate = false } = await request.json()
 
     if (!chapterId || !text) {
@@ -137,14 +130,7 @@ export async function DELETE(request: NextRequest) {
       return authResult.response!
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: 'Admin access not configured' },
-        { status: 500 }
-      )
-    }
-
-    const admin = supabaseAdmin
+    const admin = createAdminClient()
     const { searchParams } = new URL(request.url)
     const chapterId = searchParams.get('chapterId')
 
